@@ -178,15 +178,12 @@ def generate_subscription_list(clash_files, v2ray_files):
         url = f"{base_url}/{filename}"
         sub_urls.append(url)
     
-    # 创建订阅列表数据
-    subscription_data = {
-        'sub-urls': sub_urls
-    }
-    
-    # 保存到文件
+    # 手动生成 YAML 内容，确保每个 URL 都有双引号
     subscription_path = Path(SUBSCRIPTION_FILE)
     with open(subscription_path, 'w', encoding='utf-8') as f:
-        yaml.dump(subscription_data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        f.write("sub-urls:\n")
+        for url in sub_urls:
+            f.write(f'- "{url}"\n')
     
     print(f"✅ 订阅列表已生成: {SUBSCRIPTION_FILE}")
     print(f"   包含 {len(sub_urls)} 个订阅链接")
