@@ -38,6 +38,7 @@ jobs:
         id: check_changes
         run: |
           git add output/
+          git add subscription.yaml
           git diff --staged --quiet || echo "changed=true" >> $GITHUB_OUTPUT
           
       - name: 提交并推送更新
