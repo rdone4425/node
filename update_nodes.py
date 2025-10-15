@@ -14,6 +14,7 @@ from pathlib import Path
 # 配置
 SOURCES_FILE = "node.txt"
 OUTPUT_FILE = "node_content.txt"
+CLASH_OUTPUT_FILE = "clash.yml"
 OUTPUT_DIR = "."
 TIMEOUT = 30
 
@@ -48,31 +49,93 @@ def download_config(url):
         print(f"❌ 下载失败: {str(e)}")
         return None
 
+def is_clash_config(content):
+    """判断是否为 Clash 配置"""
+    try:
+        data = yaml.safe_load(content)
+        return isinstance(data, dict) and ('proxies' in data or 'proxy-groups' in data)
+    except:
+        return False
+
 def extract_content(content):
     """提取并处理内容"""
     if not content:
-        return None
+        return None, None
+    
+    clash_data = None
+    
+    # 如果是 YAML 格式（Clash 配置）
+    if is_clash_config(content):
+        try:
+            clash_data = yaml.safe_load(content)
+        except:
+            pass
     
     # 尝试解码 Base64
     try:
         decoded = base64.b64decode(content.strip()).decode('utf-8')
         # 如果解码成功且包含节点信息，返回解码后的内容
         if any(protocol in decoded for protocol in ['vmess://', 'vless://', 'ss://', 'trojan://', 'http://', 'https://']):
-            return decoded
-    except:
-        pass
-    
-    # 如果是 YAML 格式（Clash 配置）
-    try:
-        data = yaml.safe_load(content)
-        if isinstance(data, dict) and 'proxies' in data:
-            # 提取 proxies 部分
-            return yaml.dump(data['proxies'], allow_unicode=True, sort_keys=False)
+            return decoded, clash_data
     except:
         pass
     
     # 直接返回原始内容
-    return content
+    return content, clash_data
+
+def merge_clash_configs(clash_configs):
+    """合并所有 Clash 配置"""
+    if not clash_configs:
+        return None
+    
+    # 创建合并后的配置结构
+    merged = {
+        'proxies': [],
+        'proxy-groups': [
+            {
+                'name': 'auto',
+                'type': 'url-test',
+                'proxies': [],
+                'url': 'http://www.gstatic.com/generate_204',
+                'interval': 300
+            },
+            {
+                'name': 'PROXY',
+                'type': 'select',
+                'proxies': ['auto']
+            }
+        ],
+        'rules': [
+            'MATCH,PROXY'
+        ]
+    }
+    
+    proxy_names = []
+    
+    # 合并所有代理节点
+    for clash_data in clash_configs:
+        if 'proxies' in clash_data and isinstance(clash_data['proxies'], list):
+            for proxy in clash_data['proxies']:
+                if isinstance(proxy, dict) and 'name' in proxy:
+                    # 确保节点名称唯一
+                    original_name = proxy['name']
+                    name = original_name
+                    counter = 1
+                    while name in proxy_names:
+                        name = f"{original_name}_{counter}"
+                        counter += 1
+                    
+                    proxy['name'] = name
+                    proxy_names.append(name)
+                    merged['proxies'].append(proxy)
+    
+    # 更新代理组
+    if proxy_names:
+        merged['proxy-groups'][0]['proxies'] = proxy_names.copy()
+        merged['proxy-groups'][1]['proxies'].insert(0, 'auto')
+        merged['proxy-groups'][1]['proxies'].extend(proxy_names)
+    
+    return merged
 
 def main():
     """主函数"""
@@ -89,6 +152,7 @@ def main():
     
     # 存储所有下载的内容
     all_contents = []
+    clash_configs = []
     success_count = 0
     fail_count = 0
     
@@ -100,41 +164,65 @@ def main():
         content = download_config(url)
         
         if content:
-            extracted = extract_content(content)
+            extracted, clash_data = extract_content(content)
+            
             if extracted:
-                all_contents.append(f"# 来源 {i}: {url}")
-                all_contents.append(f"# 下载时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-                all_contents.append(f"# 内容大小: {len(extracted)} 字节")
-                all_contents.append("")
-                all_contents.append(extracted)
-                all_contents.append("")
-                all_contents.append("="*60)
-                all_contents.append("")
+                # 收集 Clash 配置
+                if clash_data:
+                    clash_configs.append(clash_data)
+                    print(f"📦 发现 Clash 配置 - 将写入 clash.yml")
+                else:
+                    # 只有非 Clash 内容才写入 node_content.txt
+                    all_contents.append(f"# 来源 {i}: {url}")
+                    all_contents.append(f"# 下载时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    all_contents.append(f"# 内容大小: {len(extracted)} 字节")
+                    all_contents.append("")
+                    all_contents.append(extracted)
+                    all_contents.append("")
+                    all_contents.append("="*60)
+                    all_contents.append("")
+                    print(f"✅ 内容已加入 node_content.txt")
+                
                 success_count += 1
-                print(f"✅ 内容提取成功")
             else:
                 fail_count += 1
                 print(f"⚠️  内容提取失败")
         else:
             fail_count += 1
     
-    # 写入到新文件
+    # 写入所有内容到 node_content.txt
     if all_contents:
         output_path = Path(OUTPUT_FILE)
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(all_contents))
+        print(f"\n💾 所有内容已写入: {OUTPUT_FILE} ({output_path.stat().st_size} 字节)")
+    
+    # 合并并保存 Clash 配置
+    if clash_configs:
+        print(f"\n{'─'*60}")
+        print(f"🔗 开始合并 Clash 配置...")
+        merged_clash = merge_clash_configs(clash_configs)
         
-        print(f"\n{'='*60}")
-        print(f"📊 统计信息:")
-        print(f"   总源数: {len(sources)}")
-        print(f"   成功: {success_count}")
-        print(f"   失败: {fail_count}")
-        print(f"\n💾 所有内容已写入: {OUTPUT_FILE}")
-        print(f"📄 文件大小: {output_path.stat().st_size} 字节")
-        print("="*60)
-    else:
-        print("\n❌ 没有成功提取任何内容")
+        if merged_clash and merged_clash['proxies']:
+            clash_path = Path(CLASH_OUTPUT_FILE)
+            with open(clash_path, 'w', encoding='utf-8') as f:
+                yaml.dump(merged_clash, f, allow_unicode=True, sort_keys=False)
+            
+            print(f"✅ Clash 配置已合并")
+            print(f"   节点总数: {len(merged_clash['proxies'])}")
+            print(f"   文件大小: {clash_path.stat().st_size} 字节")
+            print(f"   保存位置: {CLASH_OUTPUT_FILE}")
+        else:
+            print(f"⚠️  没有找到有效的 Clash 节点")
+    
+    # 统计信息
+    print(f"\n{'='*60}")
+    print(f"📊 统计信息:")
+    print(f"   总源数: {len(sources)}")
+    print(f"   成功: {success_count}")
+    print(f"   失败: {fail_count}")
+    print(f"   Clash 配置: {len(clash_configs)} 个")
+    print("="*60)
 
 if __name__ == "__main__":
     main()
-

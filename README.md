@@ -38,11 +38,14 @@
 ### 5. 获取更新后的内容
 
 更新后的内容会保存在：
-- **`node_content.txt`** - 所有源的内容都在这个文件中
-  - 包含每个源的 URL
-  - 包含下载时间
+- **`clash.yml`** - 合并后的 Clash 配置文件 ⭐ 推荐
+  - 包含所有 Clash 节点
+  - 自动创建代理组
+  - 可直接用于 Clash 客户端
+- **`node_content.txt`** - 非 Clash 类型的节点内容
+  - V2Ray、Shadowsocks 等其他协议节点
+  - 包含来源 URL 和时间戳
   - 自动解码 Base64
-  - 已提取的节点内容
 
 ## 📁 目录结构
 
@@ -53,7 +56,8 @@
 │       └── update-nodes.yml    # GitHub Actions 工作流
 ├── update_nodes.py             # 更新脚本
 ├── node.txt                    # 节点源 URL 列表（输入）
-├── node_content.txt            # 提取的内容（输出）⭐
+├── node_content.txt            # 提取的所有内容（输出）
+├── clash.yml                   # 合并的 Clash 配置（输出）⭐
 ├── requirements.txt            # Python 依赖
 └── README.md                   # 说明文档
 ```
@@ -81,28 +85,27 @@ schedule:
 
 ## 📊 输出文件说明
 
-`node_content.txt` 文件包含：
+### `node_content.txt`
+包含非 Clash 类型的节点内容（如 V2Ray、Shadowsocks 等）：
 - 每个源的完整内容
 - 来源 URL 标记
 - 下载时间戳
 - 内容大小信息
 - 自动解码的 Base64 内容
+- **不包含** Clash 配置（Clash 配置在 clash.yml 中）
 
-文件格式示例：
+### `clash.yml` ⭐ 推荐使用
+合并后的 Clash 配置文件：
+- 包含所有来源的 Clash 节点
+- 自动去重（节点名称唯一）
+- 内置代理组：
+  - `auto` - 自动选择最快节点
+  - `PROXY` - 手动选择或使用自动
+- 可直接导入 Clash 客户端使用
+
+订阅链接格式：
 ```
-# 来源 1: https://example.com/config1
-# 下载时间: 2025-10-15 12:00:00
-# 内容大小: 12345 字节
-
-[实际内容...]
-
-============================================================
-
-# 来源 2: https://example.com/config2
-# 下载时间: 2025-10-15 12:00:05
-# 内容大小: 23456 字节
-
-[实际内容...]
+https://raw.githubusercontent.com/你的用户名/你的仓库名/main/clash.yml
 ```
 
 ## ⚠️ 注意事项
