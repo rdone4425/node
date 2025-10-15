@@ -37,18 +37,14 @@ jobs:
       - name: 检查是否有变更
         id: check_changes
         run: |
-          git diff --quiet || echo "changed=true" >> $GITHUB_OUTPUT
+          git add node_content.txt
+          git diff --staged --quiet || echo "changed=true" >> $GITHUB_OUTPUT
           
-      - name: 提交更新
+      - name: 提交并推送更新
         if: steps.check_changes.outputs.changed == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add -A
-          git commit -m "🔄 自动更新节点配置 - $(date +'%Y-%m-%d %H:%M:%S')"
-          
-      - name: 推送更改
-        if: steps.check_changes.outputs.changed == 'true'
-        run: |
+          git commit -m "🔄 自动更新节点内容 - $(date +'%Y-%m-%d %H:%M:%S')"
           git push
 
