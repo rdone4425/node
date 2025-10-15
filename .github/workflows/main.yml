@@ -37,7 +37,7 @@ jobs:
       - name: 检查是否有变更
         id: check_changes
         run: |
-          git add node_content.txt
+          git add node_content.txt clash.yml
           git diff --staged --quiet || echo "changed=true" >> $GITHUB_OUTPUT
           
       - name: 提交并推送更新
