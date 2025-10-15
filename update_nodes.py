@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 # 配置
-SOURCES_FILE = "1.txt"
+SOURCES_FILE = "node.txt"
 OUTPUT_DIR = "data"
 TIMEOUT = 30
 
