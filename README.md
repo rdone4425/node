@@ -37,15 +37,16 @@
 
 ### 5. 获取更新后的内容
 
-更新后的内容会保存在：
-- **`clash.yml`** - 合并后的 Clash 配置文件 ⭐ 推荐
+更新后的内容会保存在 `output/` 目录下：
+- **`output/clash.yml`** - 合并后的 Clash 配置文件 ⭐ 推荐
   - 包含所有 Clash 节点
   - 自动创建代理组
   - 可直接用于 Clash 客户端
-- **`node_content.txt`** - 非 Clash 类型的节点内容
+- **`output/node_content.txt`** - 非 Clash 类型的节点内容
   - V2Ray、Shadowsocks 等其他协议节点
-  - 包含来源 URL 和时间戳
+  - 纯节点内容，每行一个
   - 自动解码 Base64
+  - 可直接作为订阅使用
 
 ## 📁 目录结构
 
@@ -54,10 +55,11 @@
 ├── .github/
 │   └── workflows/
 │       └── update-nodes.yml    # GitHub Actions 工作流
+├── output/                     # 输出目录 ⭐
+│   ├── clash.yml               # 合并的 Clash 配置
+│   └── node_content.txt        # V2Ray 等其他节点
 ├── update_nodes.py             # 更新脚本
 ├── node.txt                    # 节点源 URL 列表（输入）
-├── node_content.txt            # 提取的所有内容（输出）
-├── clash.yml                   # 合并的 Clash 配置（输出）⭐
 ├── requirements.txt            # Python 依赖
 └── README.md                   # 说明文档
 ```
@@ -85,16 +87,7 @@ schedule:
 
 ## 📊 输出文件说明
 
-### `node_content.txt`
-包含非 Clash 类型的节点内容（如 V2Ray、Shadowsocks 等）：
-- 每个源的完整内容
-- 来源 URL 标记
-- 下载时间戳
-- 内容大小信息
-- 自动解码的 Base64 内容
-- **不包含** Clash 配置（Clash 配置在 clash.yml 中）
-
-### `clash.yml` ⭐ 推荐使用
+### `output/clash.yml` ⭐ 推荐使用
 合并后的 Clash 配置文件：
 - 包含所有来源的 Clash 节点
 - 自动去重（节点名称唯一）
@@ -105,7 +98,20 @@ schedule:
 
 订阅链接格式：
 ```
-https://raw.githubusercontent.com/你的用户名/你的仓库名/main/clash.yml
+https://raw.githubusercontent.com/你的用户名/你的仓库名/main/output/clash.yml
+```
+
+### `output/node_content.txt`
+包含非 Clash 类型的节点内容（如 V2Ray、Shadowsocks 等）：
+- 纯节点内容，每行一个节点
+- 自动解码的 Base64 内容
+- 无注释，无元数据
+- 可直接导入支持订阅的客户端
+- **不包含** Clash 配置
+
+订阅链接格式：
+```
+https://raw.githubusercontent.com/你的用户名/你的仓库名/main/output/node_content.txt
 ```
 
 ## ⚠️ 注意事项

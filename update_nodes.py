@@ -13,9 +13,9 @@ from pathlib import Path
 
 # 配置
 SOURCES_FILE = "node.txt"
-OUTPUT_FILE = "node_content.txt"
-CLASH_OUTPUT_FILE = "clash.yml"
-OUTPUT_DIR = "."
+OUTPUT_DIR = "output"
+OUTPUT_FILE = f"{OUTPUT_DIR}/node_content.txt"
+CLASH_OUTPUT_FILE = f"{OUTPUT_DIR}/clash.yml"
 TIMEOUT = 30
 
 def read_sources():
@@ -172,15 +172,8 @@ def main():
                     clash_configs.append(clash_data)
                     print(f"📦 发现 Clash 配置 - 将写入 clash.yml")
                 else:
-                    # 只有非 Clash 内容才写入 node_content.txt
-                    all_contents.append(f"# 来源 {i}: {url}")
-                    all_contents.append(f"# 下载时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-                    all_contents.append(f"# 内容大小: {len(extracted)} 字节")
-                    all_contents.append("")
+                    # 只有非 Clash 内容才写入 node_content.txt（纯内容，无注释）
                     all_contents.append(extracted)
-                    all_contents.append("")
-                    all_contents.append("="*60)
-                    all_contents.append("")
                     print(f"✅ 内容已加入 node_content.txt")
                 
                 success_count += 1
@@ -190,11 +183,20 @@ def main():
         else:
             fail_count += 1
     
-    # 写入所有内容到 node_content.txt
+    # 确保输出目录存在
+    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+    
+    # 写入所有内容到 node_content.txt（合并为一个文件，按行分隔）
     if all_contents:
         output_path = Path(OUTPUT_FILE)
+        # 合并所有内容，每个内容的行合并在一起
+        all_lines = []
+        for content in all_contents:
+            lines = content.strip().split('\n')
+            all_lines.extend(lines)
+        
         with open(output_path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(all_contents))
+            f.write('\n'.join(all_lines))
         print(f"\n💾 所有内容已写入: {OUTPUT_FILE} ({output_path.stat().st_size} 字节)")
     
     # 合并并保存 Clash 配置
