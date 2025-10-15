@@ -2,24 +2,23 @@
 # -*- coding: utf-8 -*-
 """
 自动更新免费节点配置文件
-从多个源获取配置并保存
+从 node.txt 读取 URL，下载内容并写入新文件
 """
 
 import requests
 import yaml
-import json
 import base64
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import urlparse
 
 # 配置
 SOURCES_FILE = "node.txt"
-OUTPUT_DIR = "data"
+OUTPUT_FILE = "node_content.txt"
+OUTPUT_DIR = "."
 TIMEOUT = 30
 
 def read_sources():
-    """从配置文件读取节点源"""
+    """从 node.txt 读取节点源 URL"""
     sources_file = Path(SOURCES_FILE)
     if not sources_file.exists():
         print(f"❌ 未找到配置文件: {SOURCES_FILE}")
@@ -32,7 +31,7 @@ def read_sources():
     return sources
 
 def download_config(url):
-    """下载配置文件"""
+    """下载配置文件内容"""
     try:
         print(f"⬇️  正在下载: {url}")
         headers = {
@@ -49,150 +48,38 @@ def download_config(url):
         print(f"❌ 下载失败: {str(e)}")
         return None
 
-def is_clash_config(content):
-    """判断是否为 Clash 配置"""
-    try:
-        data = yaml.safe_load(content)
-        return isinstance(data, dict) and ('proxies' in data or 'proxy-groups' in data)
-    except:
-        return False
-
-def is_base64_config(content):
-    """判断是否为 Base64 编码的配置"""
-    try:
-        # 尝试解码
-        decoded = base64.b64decode(content.strip())
-        decoded_str = decoded.decode('utf-8')
-        # 检查是否包含常见的代理协议
-        return any(protocol in decoded_str for protocol in ['vmess://', 'vless://', 'ss://', 'trojan://'])
-    except:
-        return False
-
-def save_config(content, filename):
-    """保存配置文件"""
-    output_path = Path(OUTPUT_DIR) / filename
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(content)
-    print(f"💾 已保存: {filename}")
-
-def process_config(content, index, url):
-    """处理并保存配置文件"""
+def extract_content(content):
+    """提取并处理内容"""
     if not content:
         return None
     
-    # 判断配置类型并保存
-    if is_clash_config(content):
-        filename = f"clash_{index}.yml"
-        config_type = "Clash"
-    elif is_base64_config(content):
-        filename = f"v2ray_{index}_base64.txt"
-        config_type = "V2Ray (Base64)"
-        # 同时保存解码后的版本
-        try:
-            decoded = base64.b64decode(content.strip()).decode('utf-8')
-            save_config(decoded, f"v2ray_{index}_decoded.txt")
-        except:
-            pass
-    elif any(protocol in content for protocol in ['vmess://', 'vless://', 'ss://', 'trojan://']):
-        filename = f"v2ray_{index}.txt"
-        config_type = "V2Ray"
-    else:
-        filename = f"config_{index}.txt"
-        config_type = "Unknown"
+    # 尝试解码 Base64
+    try:
+        decoded = base64.b64decode(content.strip()).decode('utf-8')
+        # 如果解码成功且包含节点信息，返回解码后的内容
+        if any(protocol in decoded for protocol in ['vmess://', 'vless://', 'ss://', 'trojan://', 'http://', 'https://']):
+            return decoded
+    except:
+        pass
     
-    save_config(content, filename)
+    # 如果是 YAML 格式（Clash 配置）
+    try:
+        data = yaml.safe_load(content)
+        if isinstance(data, dict) and 'proxies' in data:
+            # 提取 proxies 部分
+            return yaml.dump(data['proxies'], allow_unicode=True, sort_keys=False)
+    except:
+        pass
     
-    return {
-        "index": index,
-        "url": url,
-        "type": config_type,
-        "filename": filename,
-        "size": len(content),
-        "download_time": datetime.now().isoformat()
-    }
-
-def merge_clash_configs(configs):
-    """合并多个 Clash 配置"""
-    merged = {
-        'proxies': [],
-        'proxy-groups': [],
-        'rules': []
-    }
-    
-    for config_file in Path(OUTPUT_DIR).glob("clash_*.yml"):
-        try:
-            with open(config_file, 'r', encoding='utf-8') as f:
-                data = yaml.safe_load(f)
-                if isinstance(data, dict):
-                    if 'proxies' in data:
-                        merged['proxies'].extend(data['proxies'])
-                    if 'proxy-groups' in data:
-                        merged['proxy-groups'].extend(data['proxy-groups'])
-                    if 'rules' in data:
-                        merged['rules'].extend(data['rules'])
-        except Exception as e:
-            print(f"⚠️  合并配置失败 {config_file}: {str(e)}")
-    
-    if merged['proxies']:
-        # 保存合并后的配置
-        merged_file = Path(OUTPUT_DIR) / "clash_merged.yml"
-        with open(merged_file, 'w', encoding='utf-8') as f:
-            yaml.dump(merged, f, allow_unicode=True, sort_keys=False)
-        print(f"🔗 已合并 {len(merged['proxies'])} 个代理节点到 clash_merged.yml")
-
-def merge_v2ray_configs():
-    """合并多个 V2Ray 配置"""
-    all_nodes = []
-    
-    for config_file in Path(OUTPUT_DIR).glob("v2ray_*.txt"):
-        if 'merged' in config_file.name:
-            continue
-        try:
-            with open(config_file, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-                # 按行分割节点
-                nodes = [line.strip() for line in content.split('\n') if line.strip()]
-                all_nodes.extend(nodes)
-        except Exception as e:
-            print(f"⚠️  读取配置失败 {config_file}: {str(e)}")
-    
-    if all_nodes:
-        # 去重
-        unique_nodes = list(set(all_nodes))
-        merged_file = Path(OUTPUT_DIR) / "v2ray_merged.txt"
-        with open(merged_file, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(unique_nodes))
-        print(f"🔗 已合并 {len(unique_nodes)} 个节点到 v2ray_merged.txt")
-
-def generate_report(results):
-    """生成更新报告"""
-    report = {
-        "last_update": datetime.now().isoformat(),
-        "total_sources": len(results),
-        "successful": sum(1 for r in results if r is not None),
-        "failed": sum(1 for r in results if r is None),
-        "configs": [r for r in results if r is not None]
-    }
-    
-    report_file = Path(OUTPUT_DIR) / "update_report.json"
-    with open(report_file, 'w', encoding='utf-8') as f:
-        json.dump(report, f, indent=2, ensure_ascii=False)
-    
-    print(f"\n📊 更新报告:")
-    print(f"   总源数: {report['total_sources']}")
-    print(f"   成功: {report['successful']}")
-    print(f"   失败: {report['failed']}")
-    
-    return report
+    # 直接返回原始内容
+    return content
 
 def main():
     """主函数"""
-    print("="*50)
-    print(f"🚀 开始更新节点配置")
+    print("="*60)
+    print(f"🚀 开始从 {SOURCES_FILE} 提取内容")
     print(f"⏰ 时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*50)
+    print("="*60)
     
     # 读取配置源
     sources = read_sources()
@@ -200,28 +87,53 @@ def main():
         print("❌ 没有可用的配置源")
         return
     
-    # 下载并处理配置
-    results = []
+    # 存储所有下载的内容
+    all_contents = []
+    success_count = 0
+    fail_count = 0
+    
+    # 下载并提取内容
     for i, url in enumerate(sources, 1):
-        print(f"\n[{i}/{len(sources)}] 处理中...")
+        print(f"\n{'─'*60}")
+        print(f"[{i}/{len(sources)}] 处理: {url}")
+        
         content = download_config(url)
-        result = process_config(content, i, url)
-        results.append(result)
+        
+        if content:
+            extracted = extract_content(content)
+            if extracted:
+                all_contents.append(f"# 来源 {i}: {url}")
+                all_contents.append(f"# 下载时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                all_contents.append(f"# 内容大小: {len(extracted)} 字节")
+                all_contents.append("")
+                all_contents.append(extracted)
+                all_contents.append("")
+                all_contents.append("="*60)
+                all_contents.append("")
+                success_count += 1
+                print(f"✅ 内容提取成功")
+            else:
+                fail_count += 1
+                print(f"⚠️  内容提取失败")
+        else:
+            fail_count += 1
     
-    # 合并配置
-    print(f"\n{'='*50}")
-    print("🔗 开始合并配置文件...")
-    merge_clash_configs(results)
-    merge_v2ray_configs()
-    
-    # 生成报告
-    print(f"\n{'='*50}")
-    generate_report(results)
-    
-    print(f"\n{'='*50}")
-    print("✅ 所有任务完成！")
-    print(f"📁 配置文件保存在: {OUTPUT_DIR}/")
-    print("="*50)
+    # 写入到新文件
+    if all_contents:
+        output_path = Path(OUTPUT_FILE)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(all_contents))
+        
+        print(f"\n{'='*60}")
+        print(f"📊 统计信息:")
+        print(f"   总源数: {len(sources)}")
+        print(f"   成功: {success_count}")
+        print(f"   失败: {fail_count}")
+        print(f"\n💾 所有内容已写入: {OUTPUT_FILE}")
+        print(f"📄 文件大小: {output_path.stat().st_size} 字节")
+        print("="*60)
+    else:
+        print("\n❌ 没有成功提取任何内容")
 
 if __name__ == "__main__":
     main()

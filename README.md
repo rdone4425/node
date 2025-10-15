@@ -1,6 +1,6 @@
 # 免费节点自动更新工具
 
-自动从多个源获取免费的 Clash 和 V2Ray 节点配置。
+自动从 `node.txt` 中的多个源提取内容并写入到 `node_content.txt` 文件。
 
 ## 📋 功能特性
 
@@ -9,10 +9,9 @@
 - ✅ 自动提交更新到仓库
 - ✅ 支持多个配置源
 - ✅ 智能识别配置类型（Clash / V2Ray / Base64）
-- ✅ 自动合并多个配置文件
 - ✅ Base64 自动解码
-- ✅ 节点去重
-- ✅ 详细的更新报告
+- ✅ 所有内容合并到一个文件
+- ✅ 包含来源信息和时间戳
 
 ## 🚀 使用方法
 
@@ -36,14 +35,14 @@
 2. 点击 `Run workflow`
 3. 等待运行完成
 
-### 5. 获取更新后的配置
+### 5. 获取更新后的内容
 
-更新后的配置文件会保存在 `data/` 目录下：
-- `data/clash_*.yml` - 单独的 Clash 配置文件
-- `data/clash_merged.yml` - 合并后的 Clash 配置（推荐使用）
-- `data/v2ray_*.txt` - 单独的 V2Ray 配置文件
-- `data/v2ray_merged.txt` - 合并后的 V2Ray 配置（推荐使用）
-- `data/update_report.json` - 详细更新报告
+更新后的内容会保存在：
+- **`node_content.txt`** - 所有源的内容都在这个文件中
+  - 包含每个源的 URL
+  - 包含下载时间
+  - 自动解码 Base64
+  - 已提取的节点内容
 
 ## 📁 目录结构
 
@@ -52,14 +51,10 @@
 ├── .github/
 │   └── workflows/
 │       └── update-nodes.yml    # GitHub Actions 工作流
-├── data/                       # 存放下载的配置文件
-│   ├── clash_*.yml             # Clash 配置
-│   ├── clash_merged.yml        # 合并的 Clash 配置
-│   ├── v2ray_*.txt             # V2Ray 配置
-│   ├── v2ray_merged.txt        # 合并的 V2Ray 配置
-│   └── update_report.json      # 更新报告
 ├── update_nodes.py             # 更新脚本
-├── node.txt                    # 节点源列表
+├── node.txt                    # 节点源 URL 列表（输入）
+├── node_content.txt            # 提取的内容（输出）⭐
+├── requirements.txt            # Python 依赖
 └── README.md                   # 说明文档
 ```
 
@@ -84,19 +79,31 @@ schedule:
 
 在 `node.txt` 文件中添加更多 URL，每行一个。
 
-## 📊 查看更新状态
+## 📊 输出文件说明
 
-查看 `data/update_report.json` 文件了解详细的更新信息：
-- 最后更新时间
-- 总源数量
-- 成功/失败统计
-- 每个配置的详细信息（类型、大小、文件名）
+`node_content.txt` 文件包含：
+- 每个源的完整内容
+- 来源 URL 标记
+- 下载时间戳
+- 内容大小信息
+- 自动解码的 Base64 内容
 
-## 🎯 推荐使用
+文件格式示例：
+```
+# 来源 1: https://example.com/config1
+# 下载时间: 2025-10-15 12:00:00
+# 内容大小: 12345 字节
 
-建议直接使用合并后的配置文件：
-- **Clash**: `data/clash_merged.yml` - 包含所有源的节点
-- **V2Ray**: `data/v2ray_merged.txt` - 已自动去重的节点列表
+[实际内容...]
+
+============================================================
+
+# 来源 2: https://example.com/config2
+# 下载时间: 2025-10-15 12:00:05
+# 内容大小: 23456 字节
+
+[实际内容...]
+```
 
 ## ⚠️ 注意事项
 
