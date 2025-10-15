@@ -1,2 +1,3 @@
 https://raw.githubusercontent.com/free-nodes/clashfree/refs/heads/main/clash.yml
 https://raw.githubusercontent.com/free-nodes/v2rayfree/refs/heads/main/v1
+https://raw.githubusercontent.com/bin1site1/V2rayFree/refs/heads/main/config.txt
