@@ -728,6 +728,132 @@ proxies:
     tls: true
     mux: true
     skip-cert-verify: false
+- alpn:
+  - h3
+  congestion-controller: bbr
+  name: xx|15d5|puddincat07@Telegram
+  password: dongtaiwang.com
+  port: 34997
+  reduce-rtt: true
+  server: 2001:bc8:32d7:302::16
+  skip-cert-verify: true
+  sni: bing.com
+  type: tuic
+  udp-relay-mode: native
+  uuid: 8687b6e0-ef24-4cd2-bcd2-02d3732bf554
+- cipher: chacha20-ietf-poly1305
+  name: sg|d06f|puddincat07@Telegram
+  password: t0srmdxrm3xyjnvqz9ewlxb2myq7rjuv
+  plugin: obfs
+  plugin-opts:
+    host: (TG @WangCai2)26af988:57468
+    mode: tls
+    tls: false
+  port: 2377
+  server: 5.44.249.42
+  type: ss
+  udp: true
+- cipher: aes-256-cfb
+  name: ca|88da|puddincat07@Telegram
+  obfs: plain
+  password: f8f7aCzcPKbsF8p3
+  port: 989
+  protocol: origin
+  server: 79.127.233.170
+  type: ssr
+- alterId: 2
+  cipher: auto
+  name: xx|e444|puddincat07@Telegram
+  network: ws
+  port: 30824
+  server: v24.heduian.link
+  skip-cert-verify: true
+  type: vmess
+  uuid: cbb3f877-d1fb-344c-87a9-d153bffd5484
+  ws-opts:
+    headers:
+      Host: v24.heduian.link
+    path: /oooo
+- alterId: 0
+  cipher: auto
+  name: us|525a|puddincat07@Telegram
+  network: ws
+  port: 443
+  server: 154.17.227.158
+  tls: true
+  type: vmess
+  uuid: de94cc0a-0592-4969-b1fc-97ea8f0ea0b3
+  ws-opts:
+    headers:
+      Host: us.nbee.pp.ua
+    path: /aa
+- client-fingerprint: chrome
+  flow: xtls-rprx-vision
+  name: xx|c730|puddincat07@Telegram
+  network: tcp
+  port: 34324
+  reality-opts:
+    public-key: pHn5CHa2P6-lNBIkTOI3zJQN19jfNFkXxGFuyefpP0M
+    short-id: ''
+  server: 2001:bc8:32d7:302::13
+  servername: dash.cloudflare.com
+  tls: true
+  type: vless
+  udp: true
+  uuid: 26c462ba-a90c-4814-9d7c-a629bc0bdb5c
+- cipher: aes-256-cfb
+  name: ca|cc4a|puddincat07@Telegram
+  password: f8f7aCzcPKbsF8p3
+  port: 989
+  server: 79.127.233.170
+  type: ss
+- cipher: aes-256-cfb
+  name: vn|124e|puddincat07@Telegram
+  password: Xn8jKdmDM00IeO%#$#fJAMtsEAEUOpH/YWYtYqDFnT0SV
+  port: 38388
+  server: 103.186.154.237
+  tfo: false
+  type: ss
+- alterId: 0
+  cipher: auto
+  name: cn|580c|puddincat07@Telegram
+  network: tcp
+  port: 50002
+  server: 139.129.20.6
+  skip-cert-verify: true
+  tfo: true
+  type: vmess
+  udp: true
+  uuid: 418048af-a293-4b99-9b0c-98ca3580dd24
+- alterId: 0
+  cipher: auto
+  name: cn|f39d|puddincat07@Telegram
+  network: tcp
+  port: 50002
+  server: 120.210.205.59
+  skip-cert-verify: true
+  tfo: true
+  type: vmess
+  udp: true
+  uuid: 418048af-a293-4b99-9b0c-98ca3580dd24
+- alterId: 0
+  cipher: auto
+  name: cn|d647|puddincat07@Telegram
+  network: tcp
+  port: 50002
+  server: 106.14.75.114
+  skip-cert-verify: true
+  type: vmess
+  uuid: 418048af-a293-4b99-9b0c-98ca3580dd24
+- alterId: 0
+  cipher: auto
+  name: cn|dd81|puddincat07@Telegram
+  network: tcp
+  port: 50007
+  server: 112.132.215.34
+  skip-cert-verify: true
+  type: vmess
+  uuid: 418048af-a293-4b99-9b0c-98ca3580dd24
 proxy-groups:
 - name: auto
   type: url-test
@@ -813,6 +939,18 @@ proxy-groups:
   - '[Vless] US_speednode_0028'
   - '[SS] 🇸🇬 新加坡3|@ripaojiedian 2'
   - '[SS] 🇭🇰 香港2|@ripaojiedian 2'
+  - xx|15d5|puddincat07@Telegram
+  - sg|d06f|puddincat07@Telegram
+  - ca|88da|puddincat07@Telegram
+  - xx|e444|puddincat07@Telegram
+  - us|525a|puddincat07@Telegram
+  - xx|c730|puddincat07@Telegram
+  - ca|cc4a|puddincat07@Telegram
+  - vn|124e|puddincat07@Telegram
+  - cn|580c|puddincat07@Telegram
+  - cn|f39d|puddincat07@Telegram
+  - cn|d647|puddincat07@Telegram
+  - cn|dd81|puddincat07@Telegram
   url: http://www.gstatic.com/generate_204
   interval: 300
 - name: PROXY
@@ -901,5 +1039,17 @@ proxy-groups:
   - '[Vless] US_speednode_0028'
   - '[SS] 🇸🇬 新加坡3|@ripaojiedian 2'
   - '[SS] 🇭🇰 香港2|@ripaojiedian 2'
+  - xx|15d5|puddincat07@Telegram
+  - sg|d06f|puddincat07@Telegram
+  - ca|88da|puddincat07@Telegram
+  - xx|e444|puddincat07@Telegram
+  - us|525a|puddincat07@Telegram
+  - xx|c730|puddincat07@Telegram
+  - ca|cc4a|puddincat07@Telegram
+  - vn|124e|puddincat07@Telegram
+  - cn|580c|puddincat07@Telegram
+  - cn|f39d|puddincat07@Telegram
+  - cn|d647|puddincat07@Telegram
+  - cn|dd81|puddincat07@Telegram
 rules:
 - MATCH,PROXY
