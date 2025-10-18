@@ -5,3 +5,6 @@ https://raw.githubusercontent.com/PuddinCat/BestClash/refs/heads/main/proxies.ya
 https://raw.githubusercontent.com/kismetpro/NodeSuber/refs/heads/main/out/All_Configs_Sub.txt
 https://github.com/chengaopan/AutoMergePublicNodes/blob/master/list.meta.yml
 https://raw.githubusercontent.com/free-nodes/v2rayfree/refs/heads/main/v2
+https://raw.githubusercontent.com/free-nodes/clashfree/refs/heads/main/clash.yml
+https://raw.githubusercontent.com/chengaopan/AutoMergePublicNodes/refs/heads/master/list.txt
+https://raw.githubusercontent.com/chengaopan/AutoMergePublicNodes/refs/heads/master/list.yml
