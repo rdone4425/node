@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout 仓库
+        uses: actions/checkout@v4
+
       - name: 检查是否需要运行
         id: check-interval
         env:
@@ -177,3 +180,28 @@ jobs:
           echo "============================================================"
           echo "完成"
           echo "============================================================"
+
+          # 将所有域名写入 yxip.txt
+          echo "正在生成 yxip.txt..."
+          > yxip.txt
+
+          # 写入所有子域名
+          for name in $names; do
+            echo "$name" >> yxip.txt
+          done
+
+          echo "✓ 已生成 yxip.txt"
+
+      - name: 提交更新
+        if: steps.check-interval.outputs.should_run == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add yxip.txt
+          if git diff --staged --quiet; then
+            echo "没有变化，跳过提交"
+          else
+            git commit -m "更新 DNS IP 列表 - $(date '+%Y-%m-%d %H:%M')"
+            git push
+            echo "✓ 已提交更新"
+          fi
