@@ -183,16 +183,32 @@ jobs:
           echo "完成"
           echo "============================================================"
 
-          # 将所有域名写入 yxip.txt
-          echo "正在生成 yxip.txt..."
-          > yxip.txt
+          # 将所有域名写入临时文件
+          echo "正在生成 DNS 域名列表..."
+          > dns_domains.txt
 
           # 写入所有子域名
           for name in $names; do
-            echo "$name" >> yxip.txt
+            echo "$name" >> dns_domains.txt
           done
 
-          echo "✓ 已生成 yxip.txt"
+          echo "✓ 已生成 DNS 域名列表"
+
+      - name: 合并域名列表
+        if: steps.check-interval.outputs.should_run == 'true'
+        run: |
+          # 下载 yuming.txt
+          echo "下载 yuming.txt..."
+          curl -sL "https://raw.githubusercontent.com/rdone4425/node/main/yuming.txt" -o yuming.txt
+
+          # 合并到 yxip.txt
+          echo "合并域名列表..."
+          cat yuming.txt dns_domains.txt | sort -u > yxip.txt
+
+          # 清理临时文件
+          rm -f dns_domains.txt yuming.txt
+
+          echo "✓ 已合并到 yxip.txt"
 
       - name: 提交更新
         if: steps.check-interval.outputs.should_run == 'true'
@@ -203,7 +219,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "没有变化，跳过提交"
           else
-            git commit -m "更新 DNS IP 列表 - $(date '+%Y-%m-%d %H:%M')"
+            git commit -m "更新域名列表 - $(date '+%Y-%m-%d %H:%M')"
             git push
             echo "✓ 已提交更新"
           fi
