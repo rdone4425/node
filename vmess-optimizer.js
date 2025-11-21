@@ -118,6 +118,8 @@ async function operator(proxies = []) {
 
     // 获取参数
     const args = $arguments || {};
+    $.log('📝 接收到的参数:', JSON.stringify(args));
+
     const limit = args.limit ? parseInt(args.limit) : 0; // 0 表示不限制
     const filterType = args.type || ''; // 空表示处理所有类型
     const tlsPorts = args.tls ? args.tls.split(',').map(p => parseInt(p.trim())) : [];
