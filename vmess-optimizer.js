@@ -5,16 +5,16 @@
  * 支持的参数：
  * - limit=N: 限制每个节点生成的优选节点数量（默认全部）
  * - type=vmess: 只处理 vmess 类型节点（默认处理所有）
- * - tlsPort=N: TLS 节点使用的端口（默认保持原端口）
- * - nonTlsPort=N: 非 TLS 节点使用的端口（默认保持原端口）
+ * - tls=N: TLS 节点使用的端口（默认保持原端口）
+ * - notls=N: 非 TLS 节点使用的端口（默认保持原端口）
  * - name=格式: 自定义节点名称格式，支持占位符：{name}原名、{domain}域名、{comment}注释、{port}端口、{index}序号
  * - url=地址: 自定义优选域名列表URL（默认使用内置地址）
  *
  * 示例：
  * - 基础使用: https://你的脚本地址/vmess-optimizer.js#limit=10
- * - 自定义端口: https://你的脚本地址/vmess-optimizer.js#tlsPort=443&nonTlsPort=80
+ * - 自定义端口: https://你的脚本地址/vmess-optimizer.js#tls=443&notls=80
  * - 自定义名称: https://你的脚本地址/vmess-optimizer.js#name={domain}-{comment}
- * - 完整配置: https://你的脚本地址/vmess-optimizer.js#type=vmess&limit=15&tlsPort=443&nonTlsPort=8080
+ * - 完整配置: https://你的脚本地址/vmess-optimizer.js#type=vmess&limit=15&tls=443&notls=8080
  */
 
 // 从 GitHub 获取优选域名列表
@@ -124,8 +124,8 @@ async function operator(proxies = []) {
     const args = $arguments || {};
     const limit = args.limit ? parseInt(args.limit) : 0; // 0 表示不限制
     const filterType = args.type || ''; // 空表示处理所有类型
-    const tlsPort = args.tlsPort ? parseInt(args.tlsPort) : null;
-    const nonTlsPort = args.nonTlsPort ? parseInt(args.nonTlsPort) : null;
+    const tlsPort = args.tls ? parseInt(args.tls) : null;
+    const nonTlsPort = args.notls ? parseInt(args.notls) : null;
     const nameFormat = args.name || null; // 自定义名称格式
     const customUrl = args.url || null; // 自定义域名列表URL
 
