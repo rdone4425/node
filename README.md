@@ -71,3 +71,4 @@ cdn1.example.com # 香港
 cdn2.example.com # 日本
 cdn3.example.com
 ```
+
