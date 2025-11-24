@@ -310,19 +310,18 @@ function main(config) {
   const otherFilterString = `(?i)^(?!.*(${filterKeywords}))(?!.*(${regionKeywords})).*$`;
 
   // 4. 定义自动选择分组的名称
-  const autoRegionGroups = [
-    "🌍 自动-Global",
+  const countryGroups = [
     "🇭🇰 自动-HK",
     "🇹🇼 自动-TW",
     "🇯🇵 自动-JP",
     "🇸🇬 自动-SG",
     "🇺🇸 自动-US",
-    "🇩🇪 自动-DE",
-    "🌐 其他节点"
+    "🇩🇪 自动-DE"
   ];
+  const autoRegionGroups = [...countryGroups, "🌐 其他节点"];
 
   // 图标基础路径
-  const iconBase = "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/icon/color";
+  const iconBase = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color";
 
   config["proxy-groups"] = [
 
@@ -330,92 +329,78 @@ function main(config) {
       ...groupBaseOption,
       "name": "节点选择",
       "type": "select",
-      "proxies": [
-        ...autoRegionGroups
-      ],
-      "include-all": true,
-      "filter": nodeFilterString,
-      "icon": `${iconBase}/proxy.png`
+      "proxies": [...autoRegionGroups],
+      "icon": `${iconBase}/Proxy.png`
     },
     {
       ...groupBaseOption,
       "name": "AI",
       "type": "url-test",
-      "proxies": ["节点选择", ...autoRegionGroups],
-      "icon": `${iconBase}/openai.png`
+      "proxies": [...autoRegionGroups],
+      "icon": `${iconBase}/Bot.png`
     },
     {
       ...groupBaseOption,
       "name": "YouTube",
       "type": "url-test",
-      "proxies": ["节点选择", ...autoRegionGroups],
-      "icon": `${iconBase}/youtube.png`
+      "proxies": [...autoRegionGroups],
+      "icon": `${iconBase}/YouTube.png`
     },
     {
       ...groupBaseOption,
       "name": "谷歌服务",
       "type": "url-test",
-      "proxies": ["节点选择", ...autoRegionGroups],
-      "icon": `${iconBase}/google.png`
+      "proxies": [...autoRegionGroups],
+      "icon": `${iconBase}/Google_Search.png`
     },
     {
       ...groupBaseOption,
       "name": "苹果服务",
-      "type": "url-test",
-      "proxies": ["节点选择", ...autoRegionGroups],
-      "icon": `${iconBase}/apple.png`
+      "type": "select",
+      "proxies": ["DIRECT", ...autoRegionGroups],
+      "icon": `${iconBase}/Apple.png`
     },
     {
       ...groupBaseOption,
       "name": "微软服务",
-      "type": "url-test",
-      "proxies": ["节点选择", ...autoRegionGroups],
-      "icon": `${iconBase}/microsoft.png`
+      "type": "select",
+      "proxies": ["DIRECT", ...autoRegionGroups],
+      "icon": `${iconBase}/Microsoft.png`
     },
     {
       ...groupBaseOption,
       "name": "Spotify",
       "type": "url-test",
-      "proxies": ["节点选择", ...autoRegionGroups],
-      "icon": `${iconBase}/spotify.png`
+      "proxies": [...autoRegionGroups],
+      "icon": `${iconBase}/Spotify.png`
     },
     {
       ...groupBaseOption,
       "name": "GitHub",
       "type": "url-test",
-      "proxies": ["节点选择", ...autoRegionGroups],
-      "icon": `${iconBase}/github.png`
+      "proxies": [...autoRegionGroups],
+      "icon": `${iconBase}/GitHub.png`
     },
     {
       ...groupBaseOption,
       "name": "广告过滤",
       "type": "select",
       "proxies": ["REJECT", "DIRECT"],
-      "icon": `${iconBase}/adguard.png`
+      "icon": `${iconBase}/Advertising.png`
     },
     {
       ...groupBaseOption,
       "name": "漏网之鱼",
-      "type": "select",
-      "proxies": ["节点选择", ...autoRegionGroups],
-      "include-all": true,
-      "filter": nodeFilterString,
-      "icon": `${iconBase}/global.png`
+      "type": "url-test",
+      "proxies": [...autoRegionGroups],
+      "icon": `${iconBase}/Final.png`
     },
     {
       ...groupBaseOption,
       "name": "全局拦截",
       "type": "select",
       "proxies": ["REJECT", "DIRECT"],
-      "icon": `${iconBase}/adguard.png`
-    },
-    {
-      ...groupBaseOption,
-      "name": "🌍 自动-Global",
-      "type": "url-test",
-      "include-all": true,
-      "filter": nodeFilterString,
-      "icon": `${iconBase}/global.png`
+      "icon": `${iconBase}/Reject.png`
     },
     {
       ...groupBaseOption,
@@ -423,7 +408,7 @@ function main(config) {
       "type": "url-test",
       "include-all": true,
       "filter": "(?i)HK|Hong Kong|香港",
-      "icon": `${iconBase}/hk.png`
+      "icon": `${iconBase}/Hong_Kong.png`
     },
     {
       ...groupBaseOption,
@@ -431,7 +416,7 @@ function main(config) {
       "type": "url-test",
       "include-all": true,
       "filter": "(?i)TW|Taiwan|台湾",
-      "icon": `${iconBase}/tw.png`
+      "icon": `${iconBase}/Taiwan.png`
     },
     {
       ...groupBaseOption,
@@ -439,7 +424,7 @@ function main(config) {
       "type": "url-test",
       "include-all": true,
       "filter": "(?i)JP|Japan|日本",
-      "icon": `${iconBase}/jp.png`
+      "icon": `${iconBase}/Japan.png`
     },
     {
       ...groupBaseOption,
@@ -447,7 +432,7 @@ function main(config) {
       "type": "url-test",
       "include-all": true,
       "filter": "(?i)SG|Singapore|狮城|新加坡",
-      "icon": `${iconBase}/sg.png`
+      "icon": `${iconBase}/Singapore.png`
     },
     {
       ...groupBaseOption,
@@ -455,7 +440,7 @@ function main(config) {
       "type": "url-test",
       "include-all": true,
       "filter": "(?i)US|United States|America|美国",
-      "icon": `${iconBase}/us.png`
+      "icon": `${iconBase}/United_States.png`
     },
     {
       ...groupBaseOption,
@@ -463,7 +448,7 @@ function main(config) {
       "type": "url-test",
       "include-all": true,
       "filter": "(?i)DE|Germany|德国|法兰克福",
-      "icon": `${iconBase}/de.png`
+      "icon": `${iconBase}/Germany.png`
     },
     {
       ...groupBaseOption,
@@ -471,7 +456,7 @@ function main(config) {
       "type": "url-test",
       "include-all": true,
       "filter": otherFilterString,
-      "icon": `${iconBase}/global.png`
+      "icon": `${iconBase}/World_Map.png`
     }
   ];
 
