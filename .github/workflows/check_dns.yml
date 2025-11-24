@@ -39,9 +39,19 @@ jobs:
             exit 0
           fi
 
-          # 获取上次成功运行的时间
-          last_run=$(gh api repos/${{ github.repository }}/actions/workflows/check_dns.yml/runs \
-            --jq '.workflow_runs | map(select(.conclusion == "success")) | .[0].updated_at // empty' 2>/dev/null || echo "")
+          # 获取上次成功运行的时间（使用更可靠的方法）
+          echo "正在查询上次运行记录..."
+          
+          # 方法1: 尝试使用工作流文件名
+          last_run=$(gh api "repos/${{ github.repository }}/actions/workflows/check_dns.yml/runs?status=success&per_page=1" \
+            --jq '.workflow_runs[0].updated_at // empty' 2>/dev/null || echo "")
+          
+          # 方法2: 如果方法1失败，尝试使用当前工作流ID
+          if [ -z "$last_run" ]; then
+            echo "尝试使用工作流ID查询..."
+            last_run=$(gh api "repos/${{ github.repository }}/actions/runs?status=success&per_page=100" \
+              --jq '.workflow_runs | map(select(.name == "Cloudflare DNS 检查")) | .[0].updated_at // empty' 2>/dev/null || echo "")
+          fi
 
           if [ -z "$last_run" ]; then
             echo "首次运行或无历史记录，执行检查"
@@ -50,7 +60,7 @@ jobs:
           fi
 
           # 计算时间差
-          last_ts=$(date -d "$last_run" +%s)
+          last_ts=$(date -d "$last_run" +%s 2>/dev/null || date -d "1970-01-01" +%s)
           now_ts=$(date +%s)
           diff_hours=$(( (now_ts - last_ts) / 3600 ))
 
