@@ -203,6 +203,15 @@ const rules = [
     "DOMAIN-SUFFIX,googleapis.cn,节点选择",
     "DOMAIN-SUFFIX,gstatic.com,节点选择",
     "DOMAIN-SUFFIX,xn--ngstr-lra8j.com,节点选择",
+    // AI 服务补充规则 (确保覆盖)
+    "DOMAIN-SUFFIX,openai.com,AI",
+    "DOMAIN-SUFFIX,ai.com,AI",
+    "DOMAIN-SUFFIX,claude.ai,AI",
+    "DOMAIN-SUFFIX,anthropic.com,AI",
+    "DOMAIN-SUFFIX,perplexity.ai,AI",
+    "DOMAIN-SUFFIX,poe.com,AI",
+    "DOMAIN-SUFFIX,midjourney.com,AI",
+    "DOMAIN-SUFFIX,notion.ai,AI",
     // 安全防护规则
     "RULE-SET,Hijacking,广告过滤",
     "RULE-SET,Privacy,广告过滤",
@@ -333,8 +342,8 @@ function main(config) {
         {
             ...groupBaseOption,
             "name": "AI",
-            "type": "url-test",
-            "proxies": [...autoRegionGroups],
+            "type": "select", // 优先美国节点,不可用时自动切换
+            "proxies": ["🇺🇸 自动-US", "🇯🇵 自动-JP", "🇸🇬 自动-SG", "🇭🇰 自动-HK", "🇹🇼 自动-TW", "🇩🇪 自动-DE", "🌐 其他节点"],
             "icon": `${iconBase}/Bot.png`
         },
         {
