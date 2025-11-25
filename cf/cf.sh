@@ -42,8 +42,8 @@ RESULT_V4_DIR="$RESULT_DIR/ipv4"
 RESULT_V6_DIR="$RESULT_DIR/ipv6"
 CONFIG_FILE="$SCRIPT_DIR/cf_config.conf"
 
-# 默认 GitHub 镜像源
-DEFAULT_MIRRORS="https://ghproxy.com/https://raw.githubusercontent.com https://mirror.ghproxy.com/https://raw.githubusercontent.com https://raw.githubusercontent.com"
+# 默认 GitHub 镜像源（按优先级排序）
+DEFAULT_MIRRORS="https://ghgo.xyz/https://raw.githubusercontent.com https://gh.api.99988866.xyz/https://raw.githubusercontent.com https://github.moeyy.xyz/https://raw.githubusercontent.com https://gh-proxy.com/https://raw.githubusercontent.com https://ghps.cc/https://raw.githubusercontent.com https://raw.githubusercontent.com"
 
 # 创建数据目录
 mkdir -p "$DATA_DIR"
@@ -77,13 +77,11 @@ CF_DOMAIN=""              # 要更新的域名 (如: example.com)
 # Telegram 通知配置 (可选)
 TG_BOT_TOKEN=""           # 机器人 Token
 TG_CHAT_ID=""             # 接收通知的 Chat ID
-
-# Telegram 通知配置 (可选)
-TG_BOT_TOKEN=""           # 机器人 Token
-TG_CHAT_ID=""             # 接收通知的 Chat ID
+TG_API_HOST=""            # API 代理地址 (如: tg-proxy.your-name.workers.dev)，留空使用官方 api.telegram.org
+TG_PROXY=""               # HTTP/SOCKS 代理 (如: socks5://127.0.0.1:1080)，留空不使用代理
 
 # GitHub 镜像源 (可选，取消注释以覆盖默认值)
-# GITHUB_MIRRORS="https://ghproxy.com/https://raw.githubusercontent.com https://raw.githubusercontent.com"
+# GITHUB_MIRRORS="https://ghgo.xyz/https://raw.githubusercontent.com https://gh.api.99988866.xyz/https://raw.githubusercontent.com https://raw.githubusercontent.com"
 EOF
 fi
 
