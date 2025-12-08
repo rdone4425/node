@@ -80,6 +80,11 @@ def main():
     
     print(f"Found {len(zones)} zones")
     
+    # 创建输出目录
+    output_dir = "dns_records"
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"Output directory: {output_dir}")
+    
     # 收集所有子域名
     all_subdomains = set()
     domain_results = {}
@@ -100,7 +105,7 @@ def main():
     
     # 按域名保存
     for domain, subdomains in domain_results.items():
-        filename = f"subdomains_{domain.replace('.', '_')}.txt"
+        filename = os.path.join(output_dir, f"{domain.replace('.', '_')}.txt")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(f"# Domain: {domain}\n")
             f.write(f"# Count: {len(subdomains)}\n")
@@ -110,7 +115,7 @@ def main():
     
     # 保存合并文件
     if len(zones) > 1:
-        filename = "subdomains_all.txt"
+        filename = os.path.join(output_dir, "all_subdomains.txt")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(f"# Total: {len(all_subdomains)} subdomains\n")
             f.write(f"# Time: {timestamp}\n\n")
