@@ -98,20 +98,10 @@ def main():
             all_subdomains.update(subdomains)
             print(f"  Found {len(subdomains)} subdomains")
     
-    # 保存结果到单个文件
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
+    # 保存结果到单个文件 - 只保存域名
     with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(f"# Cloudflare DNS Records\n")
-        f.write(f"# Total: {len(all_subdomains)} subdomains from {len(zones)} zones\n")
-        f.write(f"# Time: {timestamp}\n\n")
-        
-        # 按域名分组显示
-        for domain in sorted(domain_results.keys()):
-            f.write(f"# --- {domain} ({len(domain_results[domain])} subdomains) ---\n")
-            for subdomain in domain_results[domain]:
-                f.write(f"{subdomain}\n")
-            f.write("\n")
+        for subdomain in sorted(all_subdomains):
+            f.write(f"{subdomain}\n")
     
     print(f"Saved: {output_file}")
     
