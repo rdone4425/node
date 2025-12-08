@@ -13,7 +13,7 @@ on:
     branches:
       - main
     paths:
-      - 'cloudflare_dns_fetcher.py'
+      - '.github/workflows/cloudflare_dns_fetcher.py'
       - '.github/workflows/fetch-dns.yml'
 
 jobs:
@@ -37,7 +37,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          python cloudflare_dns_fetcher.py
+          python .github/workflows/cloudflare_dns_fetcher.py
 
       - name: Commit and push results
         run: |
