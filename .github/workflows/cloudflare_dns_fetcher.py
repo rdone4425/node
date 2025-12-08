@@ -80,10 +80,8 @@ def main():
     
     print(f"Found {len(zones)} zones")
     
-    # 创建输出目录
-    output_dir = "dns_records"
-    os.makedirs(output_dir, exist_ok=True)
-    print(f"Output directory: {output_dir}")
+    # 固定输出文件名
+    output_file = "subdomains.txt"
     
     # 收集所有子域名
     all_subdomains = set()
@@ -100,27 +98,22 @@ def main():
             all_subdomains.update(subdomains)
             print(f"  Found {len(subdomains)} subdomains")
     
-    # 保存结果
+    # 保存结果到单个文件
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    # 按域名保存
-    for domain, subdomains in domain_results.items():
-        filename = os.path.join(output_dir, f"{domain.replace('.', '_')}.txt")
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(f"# Domain: {domain}\n")
-            f.write(f"# Count: {len(subdomains)}\n")
-            f.write(f"# Time: {timestamp}\n\n")
-            f.write('\n'.join(subdomains))
-        print(f"Saved: {filename}")
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(f"# Cloudflare DNS Records\n")
+        f.write(f"# Total: {len(all_subdomains)} subdomains from {len(zones)} zones\n")
+        f.write(f"# Time: {timestamp}\n\n")
+        
+        # 按域名分组显示
+        for domain in sorted(domain_results.keys()):
+            f.write(f"# --- {domain} ({len(domain_results[domain])} subdomains) ---\n")
+            for subdomain in domain_results[domain]:
+                f.write(f"{subdomain}\n")
+            f.write("\n")
     
-    # 保存合并文件
-    if len(zones) > 1:
-        filename = os.path.join(output_dir, "all_subdomains.txt")
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(f"# Total: {len(all_subdomains)} subdomains\n")
-            f.write(f"# Time: {timestamp}\n\n")
-            f.write('\n'.join(sorted(all_subdomains)))
-        print(f"Saved: {filename}")
+    print(f"Saved: {output_file}")
     
     print(f"\nDone! {len(zones)} zones, {len(all_subdomains)} subdomains")
     return 0
