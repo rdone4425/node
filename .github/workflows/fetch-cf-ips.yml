@@ -9,6 +9,8 @@ on:
 jobs:
   fetch-ips:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许写入仓库内容
 
     steps:
       - name: 检出仓库
@@ -39,7 +41,5 @@ jobs:
           git diff --quiet && git diff --staged --quiet || git commit -m "更新 Cloudflare 优选 IP - $(date '+%Y-%m-%d')"
 
       - name: 推送更改
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+        run: |
+          git push
