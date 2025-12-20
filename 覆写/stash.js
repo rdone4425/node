@@ -195,6 +195,12 @@ const ruleProviders = {
         "behavior": "classical",
         "url": `${ruleBase}/Global/Global.yaml`,
         "path": "./ruleset/Global.yaml"
+    },
+    "Cryptocurrency": {
+        ...ruleProviderCommon,
+        "behavior": "classical",
+        "url": `${ruleBase}/Cryptocurrency/Cryptocurrency.yaml`,
+        "path": "./ruleset/Cryptocurrency.yaml"
     }
 };
 
@@ -203,6 +209,22 @@ const rules = [
     "DOMAIN-SUFFIX,googleapis.cn,节点选择",
     "DOMAIN-SUFFIX,gstatic.com,节点选择",
     "DOMAIN-SUFFIX,xn--ngstr-lra8j.com,节点选择",
+    // 加密货币交易所补充规则
+    "DOMAIN-SUFFIX,binance.com,加密货币",
+    "DOMAIN-SUFFIX,binance.us,加密货币",
+    "DOMAIN-SUFFIX,coinbase.com,加密货币",
+    "DOMAIN-SUFFIX,kraken.com,加密货币",
+    "DOMAIN-SUFFIX,okx.com,加密货币",
+    "DOMAIN-SUFFIX,huobi.com,加密货币",
+    "DOMAIN-SUFFIX,bybit.com,加密货币",
+    "DOMAIN-SUFFIX,gate.io,加密货币",
+    "DOMAIN-SUFFIX,kucoin.com,加密货币",
+    "DOMAIN-SUFFIX,bitfinex.com,加密货币",
+    "DOMAIN-SUFFIX,crypto.com,加密货币",
+    "DOMAIN-SUFFIX,gemini.com,加密货币",
+    "DOMAIN-SUFFIX,blockchain.com,加密货币",
+    "DOMAIN-SUFFIX,coingecko.com,加密货币",
+    "DOMAIN-SUFFIX,coinmarketcap.com,加密货币",
     // AI 服务补充规则 (确保覆盖)
     "DOMAIN-SUFFIX,openai.com,AI",
     "DOMAIN-SUFFIX,ai.com,AI",
@@ -236,6 +258,7 @@ const rules = [
     "RULE-SET,Telegram,节点选择",
     "RULE-SET,Twitter,节点选择",
     "RULE-SET,Game,节点选择",
+    "RULE-SET,Cryptocurrency,加密货币",
     "RULE-SET,Global,节点选择",
     "RULE-SET,ChinaMax,DIRECT",
     // GeoIP
@@ -345,6 +368,12 @@ function main(config) {
             "type": "select", // 优先美国节点,不可用时自动切换
             "proxies": ["🇺🇸 自动-US", "🇯🇵 自动-JP", "🇸🇬 自动-SG", "🇭🇰 自动-HK", "🇹🇼 自动-TW", "🇩🇪 自动-DE", "🌐 其他节点"],
             "icon": `${iconBase}/Bot.png`
+        },
+        {
+            "name": "加密货币",
+            "type": "select", // 手动选择节点
+            "proxies": ["DIRECT", "节点选择", "🇺🇸 自动-US", "🇯🇵 自动-JP", "🇸🇬 自动-SG", "🇭🇰 自动-HK", "🇹🇼 自动-TW", "🇩🇪 自动-DE", "🌐 其他节点"],
+            "icon": `${iconBase}/Cryptocurrency.png`
         },
         {
             ...groupBaseOption,
