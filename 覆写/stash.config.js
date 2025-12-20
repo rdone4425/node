@@ -65,201 +65,140 @@ const groupBaseOption = {
 // 图标基础路径
 const iconBase = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color";
 
-// 规则配置
+// 远程规则集配置
+const ruleProviderCommon = {
+  type: "http",
+  interval: 86400,
+  behavior: "classical",
+  format: "yaml"
+};
+
+// 规则集基础 URL
+const ruleBase = "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash";
+
+// 规则集配置
+const ruleProviders = {
+  reject: {
+    ...ruleProviderCommon,
+    behavior: "domain",
+    url: `${ruleBase}/Advertising/Advertising.yaml`,
+    path: "./ruleset/reject.yaml"
+  },
+  icloud: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/iCloud/iCloud.yaml`,
+    path: "./ruleset/icloud.yaml"
+  },
+  apple: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Apple/Apple.yaml`,
+    path: "./ruleset/apple.yaml"
+  },
+  google: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Google/Google.yaml`,
+    path: "./ruleset/google.yaml"
+  },
+  proxy: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Proxy/Proxy.yaml`,
+    path: "./ruleset/proxy.yaml"
+  },
+  direct: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Direct/Direct.yaml`,
+    path: "./ruleset/direct.yaml"
+  },
+  private: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Lan/Lan.yaml`,
+    path: "./ruleset/private.yaml"
+  },
+  gfw: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Global/Global.yaml`,
+    path: "./ruleset/gfw.yaml"
+  },
+  greatfire: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/GreatFire/GreatFire.yaml`,
+    path: "./ruleset/greatfire.yaml"
+  },
+  "tld-not-cn": {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Global/Global_Domain.yaml`,
+    path: "./ruleset/tld-not-cn.yaml"
+  },
+  telegramcidr: {
+    ...ruleProviderCommon,
+    behavior: "ipcidr",
+    url: `${ruleBase}/Telegram/Telegram.yaml`,
+    path: "./ruleset/telegramcidr.yaml"
+  },
+  cncidr: {
+    ...ruleProviderCommon,
+    behavior: "ipcidr",
+    url: `${ruleBase}/ChinaIPs/ChinaIPs_IP.yaml`,
+    path: "./ruleset/cncidr.yaml"
+  },
+  lancidr: {
+    ...ruleProviderCommon,
+    behavior: "ipcidr",
+    url: `${ruleBase}/Lan/Lan_IP.yaml`,
+    path: "./ruleset/lancidr.yaml"
+  },
+  applications: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Download/Download.yaml`,
+    path: "./ruleset/applications.yaml"
+  }
+};
+
+// 规则配置 - 使用远程规则集
 const rules = [
   // 脚本规则
   "SCRIPT,quic,REJECT",
   
-  // 广告拦截和隐私保护
-  "GEOSITE,category-ads-all,广告拦截",
-  "GEOSITE,category-ads,广告拦截",
-  "GEOSITE,win-spy,广告拦截",
-  "GEOSITE,win-update,广告拦截",
+  // 广告拦截
+  "RULE-SET,reject,广告拦截",
   
-  // 局域网和私有网络
-  "GEOSITE,private,DIRECT",
-  "GEOIP,private,DIRECT",
-  "GEOIP,LAN,DIRECT",
+  // 局域网
+  "RULE-SET,private,DIRECT",
+  "RULE-SET,lancidr,DIRECT,no-resolve",
   
   // AI 服务
-  "GEOSITE,openai,美国节点",
-  "GEOSITE,anthropic,美国节点",
-  "GEOSITE,claude,美国节点",
-  "GEOSITE,gemini,美国节点",
-  "GEOSITE,copilot,美国节点",
   "DOMAIN-SUFFIX,openai.com,美国节点",
   "DOMAIN-SUFFIX,anthropic.com,美国节点",
   "DOMAIN-SUFFIX,claude.ai,美国节点",
-  "DOMAIN-SUFFIX,gemini.google.com,美国节点",
-  
-  // Google 服务
-  "GEOSITE,google,选择代理",
-  "GEOSITE,google-cn,DIRECT",
-  "GEOSITE,youtube,选择代理",
-  "DOMAIN-SUFFIX,googleapis.cn,选择代理",
-  "DOMAIN-SUFFIX,gstatic.com,选择代理",
-  "DOMAIN-SUFFIX,xn--ngstr-lra8j.com,选择代理",
-  
-  // GitHub
-  "GEOSITE,github,选择代理",
-  "DOMAIN-SUFFIX,github.com,选择代理",
-  "DOMAIN-SUFFIX,githubusercontent.com,选择代理",
-  "DOMAIN-SUFFIX,github.io,选择代理",
-  "DOMAIN-SUFFIX,githubassets.com,选择代理",
-  
-  // Telegram
-  "GEOSITE,telegram,选择代理",
-  "IP-ASN,62014,选择代理,no-resolve",
-  "IP-ASN,59930,选择代理,no-resolve",
-  "IP-ASN,44907,选择代理,no-resolve",
-  "IP-ASN,211157,选择代理,no-resolve",
-  "PROCESS-NAME,Telegram.exe,选择代理",
-  "PROCESS-NAME,Telegram,选择代理",
-  
-  // Twitter/X
-  "GEOSITE,twitter,选择代理",
-  "DOMAIN-SUFFIX,twitter.com,选择代理",
-  "DOMAIN-SUFFIX,x.com,选择代理",
-  "DOMAIN-SUFFIX,twimg.com,选择代理",
-  "DOMAIN-SUFFIX,t.co,选择代理",
-  
-  // Instagram
-  "GEOSITE,instagram,选择代理",
-  "DOMAIN-SUFFIX,instagram.com,选择代理",
-  "DOMAIN-SUFFIX,cdninstagram.com,选择代理",
-  
-  // Facebook
-  "GEOSITE,facebook,选择代理",
-  "DOMAIN-SUFFIX,facebook.com,选择代理",
-  "DOMAIN-SUFFIX,fbcdn.net,选择代理",
-  "DOMAIN-SUFFIX,fb.com,选择代理",
-  
-  // TikTok
-  "GEOSITE,tiktok,选择代理",
-  "DOMAIN-SUFFIX,tiktok.com,选择代理",
-  "DOMAIN-SUFFIX,tiktokcdn.com,选择代理",
-  "DOMAIN-SUFFIX,musical.ly,选择代理",
-  
-  // Netflix
-  "GEOSITE,netflix,选择代理",
-  "DOMAIN-SUFFIX,netflix.com,选择代理",
-  "DOMAIN-SUFFIX,nflxvideo.net,选择代理",
-  "DOMAIN-SUFFIX,nflximg.net,选择代理",
-  "DOMAIN-SUFFIX,nflxext.com,选择代理",
-  
-  // Disney+
-  "GEOSITE,disney,选择代理",
-  "DOMAIN-SUFFIX,disneyplus.com,选择代理",
-  "DOMAIN-SUFFIX,disney-plus.net,选择代理",
-  "DOMAIN-SUFFIX,dssott.com,选择代理",
-  
-  // Spotify
-  "GEOSITE,spotify,选择代理",
-  "DOMAIN-SUFFIX,spotify.com,选择代理",
-  "DOMAIN-SUFFIX,scdn.co,选择代理",
-  
-  // PayPal
-  "GEOSITE,paypal,美国节点",
-  "DOMAIN-SUFFIX,paypal.com,美国节点",
-  "DOMAIN-SUFFIX,paypal.me,美国节点",
-  
-  // Steam
-  "GEOSITE,steam@cn,DIRECT",
-  "GEOSITE,steam,选择代理",
-  "DOMAIN-SUFFIX,steampowered.com,选择代理",
-  "DOMAIN-SUFFIX,steamcommunity.com,选择代理",
-  "DOMAIN-SUFFIX,steamstatic.com,选择代理",
-  
-  // Epic Games
-  "GEOSITE,epicgames,选择代理",
-  "DOMAIN-SUFFIX,epicgames.com,选择代理",
-  "DOMAIN-SUFFIX,unrealengine.com,选择代理",
+  "DOMAIN-KEYWORD,openai,美国节点",
+  "DOMAIN-KEYWORD,chatgpt,美国节点",
   
   // Apple 服务
-  "DOMAIN-SUFFIX,iphone-ld.apple.com,DIRECT",
-  "DOMAIN-SUFFIX,lcdn-locator.apple.com,DIRECT",
-  "DOMAIN-SUFFIX,lcdn-registration.apple.com,DIRECT",
-  "DOMAIN-SUFFIX,push.apple.com,DIRECT",
-  "PROCESS-NAME,trustd,选择代理",
-  "GEOSITE,apple-cn,DIRECT",
-  "GEOSITE,apple,选择代理",
+  "RULE-SET,icloud,选择代理",
+  "RULE-SET,apple,选择代理",
   
-  // Microsoft 服务
-  "GEOSITE,microsoft@cn,DIRECT",
-  "GEOSITE,microsoft,选择代理",
-  "GEOSITE,onedrive,选择代理",
-  "GEOSITE,xbox,选择代理",
-  "DOMAIN-SUFFIX,office.com,选择代理",
-  "DOMAIN-SUFFIX,office365.com,选择代理",
-  "DOMAIN-SUFFIX,microsoftonline.com,选择代理",
+  // Google 服务
+  "RULE-SET,google,选择代理",
   
-  // Amazon
-  "GEOSITE,amazon,选择代理",
-  "DOMAIN-SUFFIX,amazon.com,选择代理",
-  "DOMAIN-SUFFIX,amazonaws.com,选择代理",
+  // Telegram
+  "RULE-SET,telegramcidr,选择代理,no-resolve",
   
-  // Cloudflare
-  "GEOSITE,cloudflare,选择代理",
-  "DOMAIN-SUFFIX,cloudflare.com,选择代理",
-  "DOMAIN-SUFFIX,cloudflarestream.com,选择代理",
-  
-  // Reddit
-  "GEOSITE,reddit,选择代理",
-  "DOMAIN-SUFFIX,reddit.com,选择代理",
-  "DOMAIN-SUFFIX,redd.it,选择代理",
-  "DOMAIN-SUFFIX,redditstatic.com,选择代理",
-  
-  // Wikipedia
-  "GEOSITE,wikipedia,选择代理",
-  "DOMAIN-SUFFIX,wikipedia.org,选择代理",
-  "DOMAIN-SUFFIX,wikimedia.org,选择代理",
-  
-  // Pixiv
-  "GEOSITE,pixiv,选择代理",
-  "DOMAIN-SUFFIX,pixiv.net,选择代理",
-  "DOMAIN-SUFFIX,pximg.net,选择代理",
-  
-  // Bilibili (国内)
-  "GEOSITE,bilibili,DIRECT",
-  "DOMAIN-SUFFIX,bilibili.com,DIRECT",
-  "DOMAIN-SUFFIX,hdslb.com,DIRECT",
-  "DOMAIN-SUFFIX,biliapi.net,DIRECT",
-  
-  // 巴哈姆特 (台湾)
-  "GEOSITE,bahamut,台湾节点",
-  "DOMAIN-SUFFIX,gamer.com.tw,台湾节点",
-  
-  // 下载工具直连
-  "PROCESS-NAME,v2ray,DIRECT",
-  "PROCESS-NAME,Surge,DIRECT",
-  "PROCESS-NAME,ss-local,DIRECT",
-  "PROCESS-NAME,privoxy,DIRECT",
-  "PROCESS-NAME,trojan,DIRECT",
-  "PROCESS-NAME,trojan-go,DIRECT",
-  "PROCESS-NAME,naive,DIRECT",
-  "PROCESS-NAME,CloudflareWARP,DIRECT",
-  "PROCESS-NAME,Cloudflare WARP,DIRECT",
-  "IP-CIDR,162.159.193.0/24,DIRECT,no-resolve",
-  
-  // BT 下载直连
-  "PROCESS-NAME,p4pclient,DIRECT",
-  "PROCESS-NAME,Thunder,DIRECT",
-  "PROCESS-NAME,DownloadService,DIRECT",
-  "PROCESS-NAME,qbittorrent,DIRECT",
-  "PROCESS-NAME,Transmission,DIRECT",
-  "PROCESS-NAME,fdm,DIRECT",
-  "PROCESS-NAME,aria2c,DIRECT",
-  "PROCESS-NAME,Folx,DIRECT",
-  "PROCESS-NAME,NetTransport,DIRECT",
-  "PROCESS-NAME,uTorrent,DIRECT",
-  "PROCESS-NAME,WebTorrent,DIRECT",
+  // 下载工具
+  "RULE-SET,applications,DIRECT",
   
   // 国外网站
-  "GEOSITE,geolocation-!cn,选择代理",
+  "RULE-SET,proxy,选择代理",
+  "RULE-SET,gfw,选择代理",
+  "RULE-SET,greatfire,选择代理",
+  "RULE-SET,tld-not-cn,选择代理",
   
-  // 国内网站和 IP
-  "GEOSITE,cn,DIRECT",
-  "GEOIP,CN,DIRECT",
+  // 国内网站
+  "RULE-SET,direct,DIRECT",
+  "RULE-SET,cncidr,DIRECT,no-resolve",
+  
+  // GeoIP
+  "GEOIP,LAN,DIRECT,no-resolve",
+  "GEOIP,CN,DIRECT,no-resolve",
   
   // 兜底规则
   "MATCH,选择代理"
@@ -411,6 +350,9 @@ function main(config) {
 
     // 覆盖规则
     config["rules"] = rules;
+
+    // 覆盖规则集
+    config["rule-providers"] = ruleProviders;
 
     // 添加脚本配置
     config["script"] = {
