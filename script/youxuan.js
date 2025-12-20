@@ -7,7 +7,7 @@
  * - type=vmess: 只处理 vmess 类型节点（默认处理所有）
  * - tls=N: TLS 节点使用的端口，支持多端口如 443,8443,2053（默认保持原端口）
  * - notls=N: 非 TLS 节点使用的端口，支持多端口如 80,8080,2052（默认保持原端口）
- * - name=格式: 自定义节点名称格式，支持占位符：{name}原名、{domain}域名、{comment}注释、{port}端口、{index}序号
+ * - name=格式: 自定义节点名称格式，支持占位符：{name}原名、{domain}域名、{comment}注释、{port}端口、{index}序号、{global}全局序号
  * - url=地址: 自定义优选域名列表URL，支持多个URL用逗号分隔（默认使用内置地址）
  *
  * 示例：
@@ -43,10 +43,11 @@ async function fetchDomainsFromUrl(url) {
 
 // 从多个 URL 获取并合并域名列表
 async function fetchOptimalDomains(customUrl) {
-    // 默认优选域名列表
+    // 默认优选域名列表（更新为可用的源）
     const defaultUrls = [
-        'https://raw.githubusercontent.com/rdone4425/node/refs/heads/main/yxip.txt',
-        'https://cdn.jsdelivr.net/gh/rdone4425/node@main/yxip.txt'
+        'https://raw.githubusercontent.com/XIU2/CloudflareSpeedTest/master/ip.txt',
+        'https://cdn.jsdelivr.net/gh/XIU2/CloudflareSpeedTest@master/ip.txt',
+        'https://raw.githubusercontent.com/badafans/better-cloudflare-ip/master/cloudflare.txt'
     ];
 
     // 使用自定义 URL 或默认 URL
@@ -127,7 +128,7 @@ function isTLSEnabled(proxy) {
     }
 
     // 替换服务器地址和端口
-    function replaceServerAddress(proxy, newAddress, comment = '', port = null, nameFormat = null, index = 1) {
+    function replaceServerAddress(proxy, newAddress, comment = '', port = null, nameFormat = null, index = 1, globalIndex = 1) {
         const newProxy = JSON.parse(JSON.stringify(proxy)); // 深拷贝
 
         // 处理不同类型的节点 - 替换服务器地址
@@ -147,21 +148,23 @@ function isTLSEnabled(proxy) {
             newProxy.port = port;
         }
 
-        // 更新节点名称
+        // 更新节点名称 - 确保唯一性
         if (nameFormat) {
-            // 使用自定义格式
-            newProxy.name = nameFormat
+            // 使用自定义格式，然后在最后加上序号
+            const customName = nameFormat
                 .replace(/\{name\}/g, proxy.name)
                 .replace(/\{domain\}/g, newAddress)
                 .replace(/\{comment\}/g, comment || '')
                 .replace(/\{port\}/g, newProxy.port)
                 .replace(/\{index\}/g, index);
+            // 在自定义名称后面加上全局序号
+            newProxy.name = `${customName} #${globalIndex}`;
         } else {
-            // 默认格式
+            // 默认格式：原名 - 域名[注释]:端口 #序号
             const domainShort = newAddress.split('.')[0];
-            const commentSuffix = comment ? ` [${comment}]` : '';
-            const portSuffix = port ? `:${newProxy.port}` : '';
-            newProxy.name = `${proxy.name} #${index} - ${domainShort}${commentSuffix}${portSuffix}`;
+            const commentSuffix = comment ? `[${comment}]` : '';
+            const portSuffix = port ? `:${port}` : '';
+            newProxy.name = `${proxy.name} - ${domainShort}${commentSuffix}${portSuffix} #${globalIndex}`;
         }
 
         return newProxy;
@@ -216,8 +219,9 @@ function isTLSEnabled(proxy) {
             let processedCount = 0;
             let tlsCount = 0;
             let nonTlsCount = 0;
+            let globalIndex = 1; // 全局索引，确保所有节点名称唯一
 
-            proxies.forEach((proxy, index) => {
+            proxies.forEach((proxy) => {
                 // 类型过滤
                 if (filterType && proxy.type !== filterType) {
                     newProxies.push(proxy); // 保留不匹配的节点
@@ -238,14 +242,15 @@ function isTLSEnabled(proxy) {
                     if (ports.length > 0) {
                         // 有指定端口，为每个端口生成节点
                         ports.forEach((port) => {
-                            const newProxy = replaceServerAddress(proxy, item.domain, item.comment, port, nameFormat, nodeIndex++);
+                            const newProxy = replaceServerAddress(proxy, item.domain, item.comment, port, nameFormat, nodeIndex, globalIndex++);
                             newProxies.push(newProxy);
                         });
                     } else {
                         // 没有指定端口，保持原端口
-                        const newProxy = replaceServerAddress(proxy, item.domain, item.comment, null, nameFormat, nodeIndex++);
+                        const newProxy = replaceServerAddress(proxy, item.domain, item.comment, null, nameFormat, nodeIndex, globalIndex++);
                         newProxies.push(newProxy);
                     }
+                    nodeIndex++;
                 });
 
                 processedCount++;
