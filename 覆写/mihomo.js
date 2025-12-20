@@ -63,6 +63,18 @@ const ruleProviderCommon = {
   "format": "yaml",
   "interval": 86400
 };
+
+// 节点订阅通用配置 - 对应 mihomo.yaml 的 NodeParam 锚点
+// 每小时更新一次订阅节点，每 6 秒一次健康检查
+const proxyProviderCommon = {
+  "type": "http",
+  "interval": 3600,                              // 每小时更新一次订阅
+  "health-check": {
+    "enable": true,
+    "url": "http://www.google.com/blank.html",   // 健康检查 URL
+    "interval": 6                                 // 每 6 秒检查一次
+  }
+};
 // 规则集配置 - 统一使用 blackmatrix7/ios_rule_script
 const ruleBase = "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash";
 const ruleProviders = {
@@ -275,13 +287,15 @@ const rules = [
   "MATCH,漏网之鱼"
 ];
 
-// 代理组通用配置
+// 代理组通用配置 - 与 mihomo.yaml 一致的健康检查策略
+// 每 6 秒一次惰性健康检查，容差 20ms，时延超过 2 秒判定为失败，失败 3 次则自动触发健康检查
 const groupBaseOption = {
-  "interval": 300,
-  "timeout": 3000,
-  "url": "https://www.google.com/generate_204",
-  "lazy": true,
-  "max-failed-times": 3,
+  "interval": 6,                                 // 每 6 秒一次健康检查
+  "timeout": 2000,                              // 2 秒超时判定失败
+  "url": "http://www.google.com/blank.html",    // 轻量测试页面
+  "lazy": true,                                 // 惰性检查（仅在使用时才检查）
+  "max-failed-times": 3,                        // 失败 3 次自动触发健康检查
+  "tolerance": 20,                              // 延迟容差 20ms，避免频繁切换
   "hidden": false
 };
 
@@ -296,6 +310,16 @@ function main(config) {
 
   // 覆盖原配置中DNS配置
   config["dns"] = dnsConfig;
+
+  // 应用节点订阅通用配置到所有 proxy-providers
+  if (config["proxy-providers"]) {
+    Object.keys(config["proxy-providers"]).forEach(key => {
+      config["proxy-providers"][key] = {
+        ...proxyProviderCommon,
+        ...config["proxy-providers"][key]  // 保留原有的特定配置（如 url, path 等）
+      };
+    });
+  }
 
   // 1. 定义过滤器关键词 (排除 "官网" "流量" 等)
   const filterKeywords = "官网|套餐|流量| expiring|剩余|時間|重置|URL|到期|过期|机场|group|sub|订阅|查询|续费|观看|频道|官网|客服|M3U|车费|车友|上车|通知|公告|严禁|测速";
