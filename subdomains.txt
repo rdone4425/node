@@ -6,7 +6,6 @@ bestproxy.zhangtea.ggff.net
 hk4.zhangtea.ggff.net
 hk6.zhangtea.ggff.net
 jp4.zhangtea.ggff.net
-kr4.zhangtea.ggff.net
 kr6.zhangtea.ggff.net
 sg6.zhangtea.ggff.net
 us4.zhangtea.ggff.net
