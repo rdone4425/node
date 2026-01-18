@@ -31,6 +31,8 @@ jobs:
         id: check_update
         shell: powershell
         run: |
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           if (Test-Path "domains_cache.txt") {
             if ((Compare-Object (Get-Content "domains_cache.txt") (Get-Content "domains_new.txt") -SyncWindow 0).Count -eq 0) {
               Write-Host "文件未更新，跳过 ping"
@@ -48,6 +50,8 @@ jobs:
         if: steps.check_update.outputs.updated == 'true'
         shell: powershell
         run: |
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           Write-Host "开始检测域名..."
           "域名,状态,响应时间" | Out-File -FilePath "ping_results.csv" -Encoding utf8
           "" | Out-File -FilePath "domains_available.txt" -Encoding utf8
@@ -114,6 +118,8 @@ jobs:
         if: steps.check_update.outputs.updated == 'true'
         shell: powershell
         run: |
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           Write-Host "========================================"
           Write-Host "Ping 结果汇总:"
           Write-Host "========================================"
@@ -128,6 +134,8 @@ jobs:
         if: steps.check_update.outputs.updated == 'true'
         shell: powershell
         run: |
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           if ((Test-Path "domains_available.txt") -and ((Get-Content "domains_available.txt").Count -gt 0)) {
             Copy-Item "domains_available.txt" "subdomains.txt"
             Write-Host "已将可用域名写入 subdomains.txt"
@@ -141,6 +149,8 @@ jobs:
         if: steps.check_update.outputs.updated == 'true'
         shell: powershell
         run: |
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add subdomains.txt
@@ -152,6 +162,8 @@ jobs:
         if: always()
         shell: powershell
         run: |
+          $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           # 删除临时文件
           Remove-Item -Path "domains_new.txt" -Force -ErrorAction SilentlyContinue
           Remove-Item -Path "domains_cache.txt" -Force -ErrorAction SilentlyContinue
