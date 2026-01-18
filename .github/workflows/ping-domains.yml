@@ -1,0 +1,118 @@
+name: Ping Domains on Update
+
+on:
+  schedule:
+    # 每10分钟检查一次文件是否更新
+    - cron: '*/10 * * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  check-and-ping:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 下载域名列表
+        run: |
+          curl -s https://raw.githubusercontent.com/rdone4425/node/refs/heads/main/subdomains.txt -o domains_new.txt
+          echo "下载的域名列表:"
+          cat domains_new.txt
+
+      - name: 检查文件是否更新
+        id: check_update
+        run: |
+          if [ -f "domains_cache.txt" ]; then
+            if diff -q domains_cache.txt domains_new.txt > /dev/null; then
+              echo "文件未更新，跳过 ping"
+              echo "updated=false" >> $GITHUB_OUTPUT
+            else
+              echo "文件已更新，执行 ping"
+              echo "updated=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "首次运行，执行 ping"
+            echo "updated=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Ping 域名并筛选可用域名
+        if: steps.check_update.outputs.updated == 'true'
+        run: |
+          echo "开始 ping 域名..."
+          echo "域名,状态,响应时间" > ping_results.csv
+          > domains_available.txt  # 清空可用域名文件
+
+          total=0
+          success=0
+          failed=0
+
+          while IFS= read -r domain; do
+            # 跳过空行和注释
+            if [[ -z "$domain" || "$domain" =~ ^# ]]; then
+              continue
+            fi
+
+            total=$((total + 1))
+            echo "正在 ping ($total): $domain"
+
+            # ping 4次，超时5秒
+            if ping -c 4 -W 5 "$domain" > /dev/null 2>&1; then
+              # 获取平均响应时间
+              avg_time=$(ping -c 4 -W 5 "$domain" 2>&1 | tail -1 | awk -F '/' '{print $5}')
+              echo "$domain,成功,${avg_time}ms" >> ping_results.csv
+              echo "$domain" >> domains_available.txt  # 保存可用域名
+              echo "✓ $domain - 成功 (${avg_time}ms)"
+              success=$((success + 1))
+            else
+              echo "$domain,失败,N/A" >> ping_results.csv
+              echo "✗ $domain - 失败"
+              failed=$((failed + 1))
+            fi
+          done < domains_new.txt
+
+          echo "总计: $total | 成功: $success | 失败: $failed"
+
+      - name: 显示结果
+        if: steps.check_update.outputs.updated == 'true'
+        run: |
+          echo "========================================"
+          echo "Ping 结果汇总:"
+          echo "========================================"
+          cat ping_results.csv
+          echo ""
+          echo "成功: $(grep -c '成功' ping_results.csv || echo 0) 个"
+          echo "失败: $(grep -c '失败' ping_results.csv || echo 0) 个"
+
+      - name: 更新 subdomains.txt
+        if: steps.check_update.outputs.updated == 'true'
+        run: |
+          if [ -f "domains_available.txt" ] && [ -s "domains_available.txt" ]; then
+            cp domains_available.txt subdomains.txt
+            echo "已将可用域名写入 subdomains.txt"
+            echo "可用域名数量: $(wc -l < subdomains.txt)"
+          else
+            echo "没有可用域名，保持 subdomains.txt 不变"
+          fi
+
+      - name: 更新缓存文件
+        if: steps.check_update.outputs.updated == 'true'
+        run: |
+          cp domains_new.txt domains_cache.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add domains_cache.txt ping_results.csv subdomains.txt domains_available.txt
+          git commit -m "更新域名缓存和 ping 结果 - $(date '+%Y-%m-%d %H:%M:%S')" || echo "无需提交"
+          git push || echo "无需推送"
+
+      - name: 上传结果
+        if: steps.check_update.outputs.updated == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ping-results-${{ github.run_number }}
+          path: |
+            domains_new.txt
+            ping_results.csv
+            subdomains.txt
+            domains_available.txt
+          retention-days: 30
