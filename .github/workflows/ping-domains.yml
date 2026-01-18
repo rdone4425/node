@@ -45,7 +45,7 @@ jobs:
       - name: Ping 域名并筛选可用域名
         if: steps.check_update.outputs.updated == 'true'
         run: |
-          echo "开始 ping 域名..."
+          echo "开始检测域名..."
           echo "域名,状态,响应时间" > ping_results.csv
           > domains_available.txt  # 清空可用域名文件
 
@@ -60,15 +60,35 @@ jobs:
             fi
 
             total=$((total + 1))
-            echo "正在 ping ($total): $domain"
+            echo "正在检测 ($total): $domain"
 
-            # ping 4次，超时5秒
-            if ping -c 4 -W 5 "$domain" > /dev/null 2>&1; then
-              # 获取平均响应时间
-              avg_time=$(ping -c 4 -W 5 "$domain" 2>&1 | tail -1 | awk -F '/' '{print $5}')
-              echo "$domain,成功,${avg_time}ms" >> ping_results.csv
-              echo "$domain" >> domains_available.txt  # 保存可用域名
-              echo "✓ $domain - 成功 (${avg_time}ms)"
+            # 尝试多种方法检测域名
+            start_time=$(date +%s%3N)
+
+            # 方法1: 尝试 HTTPS
+            if curl -s -m 10 --max-time 10 -o /dev/null -w "%{http_code}" "https://$domain" | grep -qE "^(200|301|302|304|403|404)"; then
+              end_time=$(date +%s%3N)
+              response_time=$((end_time - start_time))
+              echo "$domain,成功(HTTPS),${response_time}ms" >> ping_results.csv
+              echo "$domain" >> domains_available.txt
+              echo "✓ $domain - 成功 HTTPS (${response_time}ms)"
+              success=$((success + 1))
+            # 方法2: 尝试 HTTP
+            elif curl -s -m 10 --max-time 10 -o /dev/null -w "%{http_code}" "http://$domain" | grep -qE "^(200|301|302|304|403|404)"; then
+              end_time=$(date +%s%3N)
+              response_time=$((end_time - start_time))
+              echo "$domain,成功(HTTP),${response_time}ms" >> ping_results.csv
+              echo "$domain" >> domains_available.txt
+              echo "✓ $domain - 成功 HTTP (${response_time}ms)"
+              success=$((success + 1))
+            # 方法3: 尝试 ping（作为后备）
+            elif ping -c 2 -W 5 "$domain" > /dev/null 2>&1; then
+              end_time=$(date +%s%3N)
+              response_time=$((end_time - start_time))
+              avg_time=$(ping -c 2 -W 5 "$domain" 2>&1 | tail -1 | awk -F '/' '{print $5}' || echo "N/A")
+              echo "$domain,成功(PING),${avg_time}ms" >> ping_results.csv
+              echo "$domain" >> domains_available.txt
+              echo "✓ $domain - 成功 PING (${avg_time}ms)"
               success=$((success + 1))
             else
               echo "$domain,失败,N/A" >> ping_results.csv
