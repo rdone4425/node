@@ -202,6 +202,54 @@ const ruleProviders = {
     path: "./ruleset/epicgames.yaml"
   },
 
+  // 即时通讯应用
+  discord: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Discord/Discord.yaml`,
+    path: "./ruleset/discord.yaml"
+  },
+  whatsapp: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Whatsapp/Whatsapp.yaml`,
+    path: "./ruleset/whatsapp.yaml"
+  },
+  line: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Line/Line.yaml`,
+    path: "./ruleset/line.yaml"
+  },
+  slack: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Slack/Slack.yaml`,
+    path: "./ruleset/slack.yaml"
+  },
+
+  // 购物平台
+  amazon: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Amazon/Amazon.yaml`,
+    path: "./ruleset/amazon.yaml"
+  },
+
+  // 金融服务
+  paypal: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/PayPal/PayPal.yaml`,
+    path: "./ruleset/paypal.yaml"
+  },
+
+  // 国内服务
+  bilibili: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/BiliBili/BiliBili.yaml`,
+    path: "./ruleset/bilibili.yaml"
+  },
+  weibo: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Weibo/Weibo.yaml`,
+    path: "./ruleset/weibo.yaml"
+  },
+
   // 代理和直连
   proxy: {
     ...ruleProviderCommon,
@@ -341,6 +389,32 @@ const rules = [
   "RULE-SET,epicgames,🎮 游戏服务",
   "DOMAIN-SUFFIX,steamcommunity.com,🎮 游戏服务",
 
+  // 即时通讯应用
+  "RULE-SET,discord,💬 即时通讯",
+  "RULE-SET,whatsapp,💬 即时通讯",
+  "RULE-SET,line,💬 即时通讯",
+  "RULE-SET,slack,💬 即时通讯",
+  "DOMAIN-SUFFIX,whatsapp.net,💬 即时通讯",
+  "DOMAIN-SUFFIX,slack-edge.com,💬 即时通讯",
+
+  // 购物平台
+  "RULE-SET,amazon,🛍️ 购物服务",
+  "DOMAIN-SUFFIX,amazonpay.com,🛍️ 购物服务",
+  "DOMAIN-SUFFIX,media-amazon.com,🛍️ 购物服务",
+
+  // 金融服务
+  "RULE-SET,paypal,💰 金融服务",
+  "DOMAIN-SUFFIX,paypalobjects.com,💰 金融服务",
+
+  // 国内服务
+  "RULE-SET,bilibili,📺 哔哩哔哩",
+  "DOMAIN-SUFFIX,bilivideo.com,📺 哔哩哔哩",
+  "DOMAIN-SUFFIX,hdslb.com,📺 哔哩哔哩",
+
+  "RULE-SET,weibo,🐦 微博",
+  "DOMAIN-SUFFIX,weibo.cn,🐦 微博",
+  "DOMAIN-SUFFIX,weibocdn.com,🐦 微博",
+
   // 国外网站
   "RULE-SET,proxy,🚀 选择代理",
   "RULE-SET,gfw,🚀 选择代理",
@@ -417,6 +491,9 @@ function main(config) {
           "📺 YouTube",
           "🎬 Netflix",
           "✈️ Telegram",
+          "💬 即时通讯",
+          "🛍️ 购物服务",
+          "💰 金融服务",
           "🇭🇰 香港节点",
           "🇺🇸 美国节点",
           "🇯🇵 日本节点",
@@ -569,6 +646,49 @@ function main(config) {
         icon: `${iconBase}/Game.png`
       },
 
+      // === 即时通讯应用 ===
+      {
+        ...groupBaseOption,
+        name: "💬 即时通讯",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇺🇸 美国节点", "🇯🇵 日本节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Messages.png`
+      },
+
+      // === 购物服务 ===
+      {
+        ...groupBaseOption,
+        name: "🛍️ 购物服务",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇭🇰 香港节点", "🇸🇬 新加坡节点", "DIRECT", "♻️ 自动选择"],
+        icon: `${iconBase}/Shop.png`
+      },
+
+      // === 金融服务 ===
+      {
+        ...groupBaseOption,
+        name: "💰 金融服务",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇭🇰 香港节点", "🇸🇬 新加坡节点", "♻️ 自动选择"],
+        icon: `${iconBase}/PayPal.png`
+      },
+
+      // === 国内服务 ===
+      {
+        ...groupBaseOption,
+        name: "📺 哔哩哔哩",
+        type: "select",
+        proxies: ["DIRECT", "🇭🇰 香港节点", "🇨🇳 台湾节点"],
+        icon: `${iconBase}/bilibili.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🐦 微博",
+        type: "select",
+        proxies: ["DIRECT", "🇭🇰 香港节点", "🇸🇬 新加坡节点"],
+        icon: `${iconBase}/Weibo.png`
+      },
+
       // === 广告拦截 ===
       {
         ...groupBaseOption,
@@ -635,6 +755,14 @@ function main(config) {
         filter: "(?i)🇰🇷|韩|KR|Korea|KOR",
         icon: `${iconBase}/Korea.png`
       },
+      {
+        ...groupBaseOption,
+        name: "🇨🇳 台湾节点",
+        type: "url-test",
+        "include-all": true,
+        filter: "(?i)🇨🇳|🇹🇼|台|TW|Taiwan|TWN",
+        icon: `${iconBase}/Taiwan.png`
+      },
 
       // === 兜底规则 ===
       {
@@ -669,6 +797,8 @@ function main(config) {
 
     console.log("🎉 配置处理完成 - 终极AI工具配置已应用");
     console.log("📦 包含：ChatGPT, Claude, Gemini, YouTube, Netflix, Telegram 等完整支持");
+    console.log("🔥 新增应用组：即时通讯(Discord/WhatsApp/Line/Slack)");
+    console.log("🛍️ 购物服务、💰 金融服务、📺 哔哩哔哩、🐦 微博");
     return config;
 
   } catch (error) {
