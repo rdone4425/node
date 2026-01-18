@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write  # 允许推送代码
+  actions: write   # 允许删除运行历史
 
 jobs:
   check-and-ping:
@@ -28,104 +29,153 @@ jobs:
 
       - name: 检查文件是否更新
         id: check_update
+        shell: powershell
         run: |
-          if [ -f "domains_cache.txt" ]; then
-            if diff -q domains_cache.txt domains_new.txt > /dev/null; then
-              echo "文件未更新，跳过 ping"
-              echo "updated=false" >> $GITHUB_OUTPUT
-            else
-              echo "文件已更新，执行 ping"
-              echo "updated=true" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "首次运行，执行 ping"
-            echo "updated=true" >> $GITHUB_OUTPUT
-          fi
+          if (Test-Path "domains_cache.txt") {
+            if ((Compare-Object (Get-Content "domains_cache.txt") (Get-Content "domains_new.txt") -SyncWindow 0).Count -eq 0) {
+              Write-Host "文件未更新，跳过 ping"
+              "updated=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            } else {
+              Write-Host "文件已更新，执行 ping"
+              "updated=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            }
+          } else {
+            Write-Host "首次运行，执行 ping"
+            "updated=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          }
 
       - name: Ping 域名并筛选可用域名
         if: steps.check_update.outputs.updated == 'true'
+        shell: powershell
         run: |
-          echo "开始检测域名..."
-          echo "域名,状态,响应时间" > ping_results.csv
-          > domains_available.txt  # 清空可用域名文件
+          Write-Host "开始检测域名..."
+          "域名,状态,响应时间" | Out-File -FilePath "ping_results.csv" -Encoding utf8
+          "" | Out-File -FilePath "domains_available.txt" -Encoding utf8
 
-          total=0
-          success=0
-          failed=0
+          $total = 0
+          $success = 0
+          $failed = 0
 
-          while IFS= read -r domain; do
+          Get-Content "domains_new.txt" | ForEach-Object {
+            $domain = $_.Trim()
             # 跳过空行和注释
-            if [[ -z "$domain" || "$domain" =~ ^# ]]; then
-              continue
-            fi
+            if ([string]::IsNullOrEmpty($domain) -or $domain.StartsWith("#")) {
+              return
+            }
 
-            total=$((total + 1))
-            echo "正在检测 ($total): $domain"
+            $total++
+            Write-Host "正在检测 ($total): $domain"
 
             # 尝试多种方法检测域名
-            start_time=$(date +%s%3N)
+            $start_time = Get-Date
 
             # 方法1: 尝试 HTTPS
-            if curl -s -m 10 --max-time 10 -o /dev/null -w "%{http_code}" "https://$domain" | grep -qE "^(200|301|302|304|403|404)"; then
-              end_time=$(date +%s%3N)
-              response_time=$((end_time - start_time))
-              echo "$domain,成功(HTTPS),${response_time}ms" >> ping_results.csv
-              echo "$domain" >> domains_available.txt
-              echo "✓ $domain - 成功 HTTPS (${response_time}ms)"
-              success=$((success + 1))
-            # 方法2: 尝试 HTTP
-            elif curl -s -m 10 --max-time 10 -o /dev/null -w "%{http_code}" "http://$domain" | grep -qE "^(200|301|302|304|403|404)"; then
-              end_time=$(date +%s%3N)
-              response_time=$((end_time - start_time))
-              echo "$domain,成功(HTTP),${response_time}ms" >> ping_results.csv
-              echo "$domain" >> domains_available.txt
-              echo "✓ $domain - 成功 HTTP (${response_time}ms)"
-              success=$((success + 1))
-            # 方法3: 尝试 ping（作为后备）
-            elif ping -c 2 -W 5 "$domain" > /dev/null 2>&1; then
-              end_time=$(date +%s%3N)
-              response_time=$((end_time - start_time))
-              avg_time=$(ping -c 2 -W 5 "$domain" 2>&1 | tail -1 | awk -F '/' '{print $5}' || echo "N/A")
-              echo "$domain,成功(PING),${avg_time}ms" >> ping_results.csv
-              echo "$domain" >> domains_available.txt
-              echo "✓ $domain - 成功 PING (${avg_time}ms)"
-              success=$((success + 1))
-            else
-              echo "$domain,失败,N/A" >> ping_results.csv
-              echo "✗ $domain - 失败"
-              failed=$((failed + 1))
-            fi
-          done < domains_new.txt
+            try {
+              $response = Invoke-WebRequest -Uri "https://$domain" -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop
+              $end_time = Get-Date
+              $response_time = [math]::Round(($end_time - $start_time).TotalMilliseconds)
+              "$domain,成功(HTTPS),${response_time}ms" | Out-File -FilePath "ping_results.csv" -Encoding utf8 -Append
+              $domain | Out-File -FilePath "domains_available.txt" -Encoding utf8 -Append
+              Write-Host "✓ $domain - 成功 HTTPS (${response_time}ms)"
+              $success++
+            }
+            catch {
+              # 方法2: 尝试 HTTP
+              try {
+                $response = Invoke-WebRequest -Uri "http://$domain" -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop
+                $end_time = Get-Date
+                $response_time = [math]::Round(($end_time - $start_time).TotalMilliseconds)
+                "$domain,成功(HTTP),${response_time}ms" | Out-File -FilePath "ping_results.csv" -Encoding utf8 -Append
+                $domain | Out-File -FilePath "domains_available.txt" -Encoding utf8 -Append
+                Write-Host "✓ $domain - 成功 HTTP (${response_time}ms)"
+                $success++
+              }
+              catch {
+                # 方法3: 尝试 ping（作为后备）
+                $ping_result = Test-Connection -ComputerName $domain -Count 2 -TimeToLive 5 -ErrorAction SilentlyContinue
+                if ($ping_result) {
+                  $avg_time = [math]::Round($ping_result.ResponseTime.Average())
+                  "$domain,成功(PING),${avg_time}ms" | Out-File -FilePath "ping_results.csv" -Encoding utf8 -Append
+                  $domain | Out-File -FilePath "domains_available.txt" -Encoding utf8 -Append
+                  Write-Host "✓ $domain - 成功 PING (${avg_time}ms)"
+                  $success++
+                } else {
+                  "$domain,失败,N/A" | Out-File -FilePath "ping_results.csv" -Encoding utf8 -Append
+                  Write-Host "✗ $domain - 失败"
+                  $failed++
+                }
+              }
+            }
+          }
 
-          echo "总计: $total | 成功: $success | 失败: $failed"
+          Write-Host "总计: $total | 成功: $success | 失败: $failed"
 
       - name: 显示结果
         if: steps.check_update.outputs.updated == 'true'
+        shell: powershell
         run: |
-          echo "========================================"
-          echo "Ping 结果汇总:"
-          echo "========================================"
-          cat ping_results.csv
-          echo ""
-          echo "成功: $(grep -c '成功' ping_results.csv || echo 0) 个"
-          echo "失败: $(grep -c '失败' ping_results.csv || echo 0) 个"
+          Write-Host "========================================"
+          Write-Host "Ping 结果汇总:"
+          Write-Host "========================================"
+          Get-Content "ping_results.csv"
+          Write-Host ""
+          $success_count = (Get-Content "ping_results.csv" | Where-Object { $_ -match "成功" }).Count
+          $failed_count = (Get-Content "ping_results.csv" | Where-Object { $_ -match "失败" }).Count
+          Write-Host "成功: $success_count 个"
+          Write-Host "失败: $failed_count 个"
 
       - name: 更新 subdomains.txt
         if: steps.check_update.outputs.updated == 'true'
+        shell: powershell
         run: |
-          if [ -f "domains_available.txt" ] && [ -s "domains_available.txt" ]; then
-            cp domains_available.txt subdomains.txt
-            echo "已将可用域名写入 subdomains.txt"
-            echo "可用域名数量: $(wc -l < subdomains.txt)"
-          else
-            echo "没有可用域名，保持 subdomains.txt 不变"
-          fi
+          if ((Test-Path "domains_available.txt") -and ((Get-Content "domains_available.txt").Count -gt 0)) {
+            Copy-Item "domains_available.txt" "subdomains.txt"
+            Write-Host "已将可用域名写入 subdomains.txt"
+            $domain_count = (Get-Content "subdomains.txt").Count
+            Write-Host "可用域名数量: $domain_count"
+          } else {
+            Write-Host "没有可用域名，保持 subdomains.txt 不变"
+          }
 
       - name: 提交 subdomains.txt
         if: steps.check_update.outputs.updated == 'true'
+        shell: powershell
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add subdomains.txt
-          git commit -m "更新可用域名列表 - $(date '+%Y-%m-%d %H:%M:%S')" || echo "无需提交"
-          git push || echo "无需推送"
+          $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+          git commit -m "更新可用域名列表 - $timestamp" 2>$null
+          git push 2>$null
+
+      - name: 删除运行历史
+        if: always()
+        shell: powershell
+        run: |
+          # 删除临时文件
+          Remove-Item -Path "domains_new.txt" -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "domains_cache.txt" -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "domains_available.txt" -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "ping_results.csv" -Force -ErrorAction SilentlyContinue
+          
+          # 删除当前工作流运行历史
+          try {
+            $run_id = $env:GITHUB_RUN_ID
+            $repo = $env:GITHUB_REPOSITORY
+            $token = $env:GITHUB_TOKEN
+            
+            # 使用 GitHub API 删除运行历史
+            $headers = @{
+              "Authorization" = "token $token"
+              "Accept" = "application/vnd.github.v3+json"
+            }
+            
+            $api_url = "https://api.github.com/repos/$repo/actions/runs/$run_id"
+            Invoke-RestMethod -Uri $api_url -Method Delete -Headers $headers
+            Write-Host "已删除运行历史: $run_id"
+          }
+          catch {
+            Write-Host "删除运行历史失败: $_"
+          }
+          
+          Write-Host "清理完成"
