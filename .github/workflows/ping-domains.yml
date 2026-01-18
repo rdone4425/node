@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   check-and-ping:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: 检出代码
@@ -121,24 +121,11 @@ jobs:
             echo "没有可用域名，保持 subdomains.txt 不变"
           fi
 
-      - name: 更新缓存文件
+      - name: 提交 subdomains.txt
         if: steps.check_update.outputs.updated == 'true'
         run: |
-          cp domains_new.txt domains_cache.txt
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add domains_cache.txt ping_results.csv subdomains.txt domains_available.txt
-          git commit -m "更新域名缓存和 ping 结果 - $(date '+%Y-%m-%d %H:%M:%S')" || echo "无需提交"
+          git add subdomains.txt
+          git commit -m "更新可用域名列表 - $(date '+%Y-%m-%d %H:%M:%S')" || echo "无需提交"
           git push || echo "无需推送"
-
-      - name: 上传结果
-        if: steps.check_update.outputs.updated == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ping-results-${{ github.run_number }}
-          path: |
-            domains_new.txt
-            ping_results.csv
-            subdomains.txt
-            domains_available.txt
-          retention-days: 30
