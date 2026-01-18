@@ -432,9 +432,12 @@ const rules = [
 ];
 
 // 主函数 - Sub-Store 脚本操作入口
-function main(config) {
+function operator(proxies = [], targetPlatform, context) {
+  // 获取原始配置
+  const config = context || {};
+
   try {
-    const proxyCount = config?.proxies?.length ?? 0;
+    const proxyCount = proxies?.length ?? 0;
     const proxyProviderCount =
       typeof config?.["proxy-providers"] === "object" ? Object.keys(config["proxy-providers"]).length : 0;
 
@@ -444,6 +447,11 @@ function main(config) {
     }
 
     console.log(`📊 找到 ${proxyCount} 个节点, ${proxyProviderCount} 个订阅源`);
+
+    // 确保 config 有 proxies 属性
+    if (!config.proxies) {
+      config.proxies = proxies;
+    }
 
     // 覆盖基础配置
     config["mixed-port"] = 7890;
@@ -808,6 +816,3 @@ function main(config) {
     return config;
   }
 }
-
-// 导出配置
-module.exports = main;
