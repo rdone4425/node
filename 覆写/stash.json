@@ -1,0 +1,683 @@
+// Stash 配置预处理脚本 - 终极AI工具配置增强版
+// 用于 Sub-Store 的脚本操作
+// 支持 ChatGPT、Claude、Gemini、流媒体等全面服务
+
+// 国内DNS服务器
+const domesticNameservers = [
+  "223.5.5.5",
+  "119.29.29.29",
+  "114.114.114.114"
+];
+
+// 国外DNS服务器
+const foreignNameservers = [
+  "https://dns.alidns.com/dns-query",
+  "https://doh.pub/dns-query",
+  "https://dns.google/dns-query"
+];
+
+// DNS配置
+const dnsConfig = {
+  enable: true,
+  ipv6: false,
+  listen: "0.0.0.0:53",
+  "default-nameserver": domesticNameservers,
+  nameserver: foreignNameservers,
+  "enhanced-mode": "fake-ip",
+  "fake-ip-range": "198.18.0.1/16",
+  "fake-ip-filter": [
+    "+.lan",
+    "localhost.ptlogin2.qq.com",
+    "*.battle.net",
+    "*.blzstatic.cn",
+    "*.battlenet.com",
+    "*.battlenet.com.cn",
+    "lens.l.google.com",
+    "+.srv.nintendo.net",
+    "+.stun.playstation.net",
+    "+.msftncsi.com",
+    "+.xboxlive.com",
+    "msftconnecttest.com",
+    "xbox.*.*.microsoft.com",
+    "+.msftconnecttest.com",
+    "*.msftncsi.com",
+    "*.msftconnecttest.com",
+    "*.mcdn.bilivideo.cn"
+  ],
+  fallback: [
+    "https://1.1.1.1/dns-query",
+    "tls://8.8.8.8:853",
+    "tls://1.1.1.1:853"
+  ],
+  "fallback-filter": {
+    geoip: true,
+    "geoip-code": "CN",
+    ipcidr: ["240.0.0.0/4", "0.0.0.0/32"],
+    domain: ["+.google.com", "+.openai.com", "+.anthropic.com", "+.github.com"]
+  }
+};
+
+// 代理提供商通用配置
+const proxyProviderCommon = {
+  interval: 600,
+  "health-check": {
+    enable: true,
+    url: "http://www.gstatic.com/generate_204",
+    interval: 300,
+    timeout: 5000
+  }
+};
+
+// 代理组通用配置
+const groupBaseOption = {
+  interval: 120,
+  timeout: 3000,
+  url: "http://www.gstatic.com/generate_204",
+  lazy: true,
+  tolerance: 50
+};
+
+// 图标基础路径
+const iconBase = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color";
+
+// 远程规则集配置
+const ruleProviderCommon = {
+  type: "http",
+  interval: 86400,
+  behavior: "classical",
+  format: "yaml"
+};
+
+// 规则集基础 URL
+const ruleBase = "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash";
+
+// 规则集配置
+const ruleProviders = {
+  // 广告拦截
+  reject: {
+    ...ruleProviderCommon,
+    behavior: "domain",
+    url: `${ruleBase}/Advertising/Advertising.yaml`,
+    path: "./ruleset/reject.yaml"
+  },
+
+  // AI 服务规则集
+  openai: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/OpenAI/OpenAI.yaml`,
+    path: "./ruleset/openai.yaml"
+  },
+
+  // Apple 服务
+  icloud: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/iCloud/iCloud.yaml`,
+    path: "./ruleset/icloud.yaml"
+  },
+  apple: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Apple/Apple.yaml`,
+    path: "./ruleset/apple.yaml"
+  },
+
+  // Google 服务
+  google: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Google/Google.yaml`,
+    path: "./ruleset/google.yaml"
+  },
+  youtube: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/YouTube/YouTube.yaml`,
+    path: "./ruleset/youtube.yaml"
+  },
+
+  // 流媒体服务
+  netflix: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Netflix/Netflix.yaml`,
+    path: "./ruleset/netflix.yaml"
+  },
+  disney: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Disney/Disney.yaml`,
+    path: "./ruleset/disney.yaml"
+  },
+  spotify: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Spotify/Spotify.yaml`,
+    path: "./ruleset/spotify.yaml"
+  },
+  tiktok: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/TikTok/TikTok.yaml`,
+    path: "./ruleset/tiktok.yaml"
+  },
+
+  // 社交平台
+  telegram: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Telegram/Telegram.yaml`,
+    path: "./ruleset/telegram.yaml"
+  },
+  twitter: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Twitter/Twitter.yaml`,
+    path: "./ruleset/twitter.yaml"
+  },
+  facebook: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Facebook/Facebook.yaml`,
+    path: "./ruleset/facebook.yaml"
+  },
+  instagram: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Instagram/Instagram.yaml`,
+    path: "./ruleset/instagram.yaml"
+  },
+
+  // GitHub
+  github: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/GitHub/GitHub.yaml`,
+    path: "./ruleset/github.yaml"
+  },
+
+  // Microsoft
+  microsoft: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Microsoft/Microsoft.yaml`,
+    path: "./ruleset/microsoft.yaml"
+  },
+
+  // 游戏平台
+  steam: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Steam/Steam.yaml`,
+    path: "./ruleset/steam.yaml"
+  },
+  epicgames: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Epic/Epic.yaml`,
+    path: "./ruleset/epicgames.yaml"
+  },
+
+  // 代理和直连
+  proxy: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Proxy/Proxy.yaml`,
+    path: "./ruleset/proxy.yaml"
+  },
+  direct: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Direct/Direct.yaml`,
+    path: "./ruleset/direct.yaml"
+  },
+
+  // 局域网
+  private: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Lan/Lan.yaml`,
+    path: "./ruleset/private.yaml"
+  },
+
+  // GFW
+  gfw: {
+    ...ruleProviderCommon,
+    url: `${ruleBase}/Global/Global.yaml`,
+    path: "./ruleset/gfw.yaml"
+  },
+
+  // IP 规则
+  telegramcidr: {
+    ...ruleProviderCommon,
+    behavior: "ipcidr",
+    url: `${ruleBase}/Telegram/Telegram.yaml`,
+    path: "./ruleset/telegramcidr.yaml"
+  },
+  cncidr: {
+    ...ruleProviderCommon,
+    behavior: "ipcidr",
+    url: `${ruleBase}/ChinaIPs/ChinaIPs_IP.yaml`,
+    path: "./ruleset/cncidr.yaml"
+  },
+  lancidr: {
+    ...ruleProviderCommon,
+    behavior: "ipcidr",
+    url: `${ruleBase}/Lan/Lan_IP.yaml`,
+    path: "./ruleset/lancidr.yaml"
+  }
+};
+
+// 规则配置 - 使用远程规则集
+const rules = [
+  // 广告拦截
+  "RULE-SET,reject,🛡️ 广告拦截",
+
+  // 局域网直连
+  "RULE-SET,private,DIRECT",
+  "RULE-SET,lancidr,DIRECT,no-resolve",
+
+  // AI 服务 - 优先级最高
+  "DOMAIN-SUFFIX,openai.com,🧠 ChatGPT",
+  "DOMAIN-SUFFIX,chatgpt.com,🧠 ChatGPT",
+  "DOMAIN-SUFFIX,oaistatic.com,🧠 ChatGPT",
+  "DOMAIN-SUFFIX,oaiusercontent.com,🧠 ChatGPT",
+  "DOMAIN-KEYWORD,openai,🧠 ChatGPT",
+  "RULE-SET,openai,🧠 ChatGPT",
+
+  "DOMAIN-SUFFIX,anthropic.com,💭 Claude",
+  "DOMAIN-SUFFIX,claude.ai,💭 Claude",
+  "DOMAIN-KEYWORD,claude,💭 Claude",
+
+  "DOMAIN-SUFFIX,gemini.google.com,🌟 Google服务",
+  "DOMAIN-SUFFIX,bard.google.com,🌟 Google服务",
+  "DOMAIN-KEYWORD,gemini,🌟 Google服务",
+
+  "DOMAIN-SUFFIX,perplexity.ai,🔬 AI平台",
+  "DOMAIN-SUFFIX,huggingface.co,🔬 AI平台",
+  "DOMAIN-SUFFIX,poe.com,🔬 AI平台",
+  "DOMAIN-SUFFIX,character.ai,🔬 AI平台",
+
+  "DOMAIN-SUFFIX,midjourney.com,🎨 Midjourney",
+  "DOMAIN-SUFFIX,discord.com,🎨 Midjourney",
+  "DOMAIN-SUFFIX,discordapp.com,🎨 Midjourney",
+
+  // 流媒体服务
+  "RULE-SET,youtube,📺 YouTube",
+  "DOMAIN-SUFFIX,googlevideo.com,📺 YouTube",
+  "DOMAIN-SUFFIX,ytimg.com,📺 YouTube",
+
+  "RULE-SET,netflix,🎬 Netflix",
+  "DOMAIN-SUFFIX,nflximg.com,🎬 Netflix",
+  "DOMAIN-SUFFIX,nflxvideo.net,🎬 Netflix",
+
+  "RULE-SET,disney,🏰 Disney+",
+  "DOMAIN-SUFFIX,disneyplus.com,🏰 Disney+",
+
+  "RULE-SET,spotify,🎵 Spotify",
+  "DOMAIN-SUFFIX,scdn.co,🎵 Spotify",
+
+  "RULE-SET,tiktok,📱 TikTok",
+  "DOMAIN-SUFFIX,tiktokcdn.com,📱 TikTok",
+  "DOMAIN-KEYWORD,tiktok,📱 TikTok",
+
+  // 社交平台
+  "RULE-SET,telegram,✈️ Telegram",
+  "RULE-SET,telegramcidr,✈️ Telegram,no-resolve",
+  "IP-CIDR,91.108.4.0/22,✈️ Telegram,no-resolve",
+  "IP-CIDR,91.108.8.0/22,✈️ Telegram,no-resolve",
+  "IP-CIDR,149.154.160.0/20,✈️ Telegram,no-resolve",
+
+  "RULE-SET,twitter,🐦 X平台",
+  "DOMAIN-SUFFIX,x.com,🐦 X平台",
+  "DOMAIN-SUFFIX,twimg.com,🐦 X平台",
+
+  "RULE-SET,facebook,📘 Facebook",
+  "DOMAIN-SUFFIX,fb.com,📘 Facebook",
+
+  "RULE-SET,instagram,📷 Instagram",
+  "DOMAIN-SUFFIX,cdninstagram.com,📷 Instagram",
+
+  // 开发工具
+  "RULE-SET,github,🐙 GitHub",
+  "DOMAIN-SUFFIX,githubusercontent.com,🐙 GitHub",
+  "DOMAIN-SUFFIX,githubassets.com,🐙 GitHub",
+
+  // 平台服务
+  "RULE-SET,apple,🍎 Apple",
+  "RULE-SET,icloud,🍎 Apple",
+
+  "RULE-SET,google,🌟 Google服务",
+  "DOMAIN-SUFFIX,googleapis.com,🌟 Google服务",
+  "DOMAIN-SUFFIX,gstatic.com,🌟 Google服务",
+
+  "RULE-SET,microsoft,🪟 Microsoft",
+  "DOMAIN-SUFFIX,office.com,🪟 Microsoft",
+  "DOMAIN-SUFFIX,live.com,🪟 Microsoft",
+
+  // 游戏平台
+  "RULE-SET,steam,🎮 游戏服务",
+  "RULE-SET,epicgames,🎮 游戏服务",
+  "DOMAIN-SUFFIX,steamcommunity.com,🎮 游戏服务",
+
+  // 国外网站
+  "RULE-SET,proxy,🚀 选择代理",
+  "RULE-SET,gfw,🚀 选择代理",
+
+  // 国内直连
+  "RULE-SET,direct,DIRECT",
+  "RULE-SET,cncidr,DIRECT,no-resolve",
+
+  // GeoIP
+  "GEOIP,LAN,DIRECT,no-resolve",
+  "GEOIP,CN,DIRECT,no-resolve",
+
+  // 兜底规则
+  "MATCH,🐟 Final"
+];
+
+// 主函数 - Sub-Store 脚本操作入口
+function main(config) {
+  try {
+    const proxyCount = config?.proxies?.length ?? 0;
+    const proxyProviderCount =
+      typeof config?.["proxy-providers"] === "object" ? Object.keys(config["proxy-providers"]).length : 0;
+
+    if (proxyCount === 0 && proxyProviderCount === 0) {
+      console.log("⚠️ 配置文件中未找到任何代理，返回原始配置");
+      return config;
+    }
+
+    console.log(`📊 找到 ${proxyCount} 个节点, ${proxyProviderCount} 个订阅源`);
+
+    // 覆盖基础配置
+    config["mixed-port"] = 7890;
+    config["allow-lan"] = true;
+    config["bind-address"] = "*";
+    config["ipv6"] = false;
+    config["mode"] = "rule";
+    config["log-level"] = "info";
+    config["external-controller"] = "127.0.0.1:9090";
+
+    // 性能优化
+    config["tcp-concurrent"] = true;
+    config["find-process-mode"] = "strict";
+    config["unified-delay"] = false;
+
+    // 覆盖 DNS 配置
+    config["dns"] = dnsConfig;
+
+    // 应用代理提供商通用配置
+    if (config["proxy-providers"]) {
+      Object.keys(config["proxy-providers"]).forEach(key => {
+        config["proxy-providers"][key] = {
+          ...proxyProviderCommon,
+          ...config["proxy-providers"][key]
+        };
+      });
+    }
+
+    // 定义过滤器关键词
+    const filterKeywords = "官网|套餐|流量|expiring|剩余|時間|重置|到期|过期|机场|订阅|续费|观看|频道|客服|通知|公告|严禁|测速";
+
+    // 配置代理组
+    config["proxy-groups"] = [
+      // === 核心控制器 ===
+      {
+        ...groupBaseOption,
+        name: "🚀 选择代理",
+        type: "select",
+        proxies: [
+          "♻️ 自动选择",
+          "🧠 ChatGPT",
+          "💭 Claude",
+          "🌟 Google服务",
+          "🔬 AI平台",
+          "📺 YouTube",
+          "🎬 Netflix",
+          "✈️ Telegram",
+          "🇭🇰 香港节点",
+          "🇺🇸 美国节点",
+          "🇯🇵 日本节点",
+          "🇸🇬 新加坡节点",
+          "DIRECT"
+        ],
+        icon: `${iconBase}/Available.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "♻️ 自动选择",
+        type: "url-test",
+        "include-all": true,
+        icon: `${iconBase}/Auto.png`
+      },
+
+      // === AI 工具专用分组 ===
+      {
+        ...groupBaseOption,
+        name: "🧠 ChatGPT",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇬🇧 英国节点", "🇨🇦 加拿大节点", "🇯🇵 日本节点", "🇸🇬 新加坡节点", "♻️ 自动选择"],
+        icon: `${iconBase}/ChatGPT.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "💭 Claude",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇬🇧 英国节点", "🇨🇦 加拿大节点", "🇯🇵 日本节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Bot.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🌟 Google服务",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇯🇵 日本节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Google.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🔬 AI平台",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇬🇧 英国节点", "🇸🇬 新加坡节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Lab.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🎨 Midjourney",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇭🇰 香港节点", "🇸🇬 新加坡节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Puzzle.png`
+      },
+
+      // === 流媒体服务 ===
+      {
+        ...groupBaseOption,
+        name: "📺 YouTube",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇯🇵 日本节点", "🇺🇸 美国节点", "♻️ 自动选择"],
+        icon: `${iconBase}/YouTube.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🎬 Netflix",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇺🇸 美国节点", "🇯🇵 日本节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Netflix.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🏰 Disney+",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇺🇸 美国节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Disney+.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🎵 Spotify",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇺🇸 美国节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Spotify.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "📱 TikTok",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇸🇬 新加坡节点", "🇯🇵 日本节点", "🇰🇷 韩国节点", "♻️ 自动选择"],
+        icon: `${iconBase}/TikTok.png`
+      },
+
+      // === 社交平台 ===
+      {
+        ...groupBaseOption,
+        name: "✈️ Telegram",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇺🇸 美国节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Telegram.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🐦 X平台",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇺🇸 美国节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Twitter.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "📘 Facebook",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇺🇸 美国节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Facebook.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "📷 Instagram",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇺🇸 美国节点", "♻️ 自动选择"],
+        icon: `${iconBase}/Instagram.png`
+      },
+
+      // === 平台服务 ===
+      {
+        ...groupBaseOption,
+        name: "🍎 Apple",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇭🇰 香港节点", "🇯🇵 日本节点", "DIRECT", "♻️ 自动选择"],
+        icon: `${iconBase}/Apple.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🪟 Microsoft",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇭🇰 香港节点", "DIRECT", "♻️ 自动选择"],
+        icon: `${iconBase}/Microsoft.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🐙 GitHub",
+        type: "select",
+        proxies: ["🇺🇸 美国节点", "🇸🇬 新加坡节点", "🇭🇰 香港节点", "♻️ 自动选择"],
+        icon: `${iconBase}/GitHub.png`
+      },
+
+      // === 游戏服务 ===
+      {
+        ...groupBaseOption,
+        name: "🎮 游戏服务",
+        type: "select",
+        proxies: ["🇭🇰 香港节点", "🇸🇬 新加坡节点", "🇯🇵 日本节点", "🇺🇸 美国节点", "DIRECT", "♻️ 自动选择"],
+        icon: `${iconBase}/Game.png`
+      },
+
+      // === 广告拦截 ===
+      {
+        ...groupBaseOption,
+        name: "🛡️ 广告拦截",
+        type: "select",
+        proxies: ["REJECT", "DIRECT"],
+        icon: `${iconBase}/AdBlack.png`
+      },
+
+      // === 地区节点分组 ===
+      {
+        ...groupBaseOption,
+        name: "🇭🇰 香港节点",
+        type: "url-test",
+        "include-all": true,
+        filter: "(?i)🇭🇰|港|HK|Hong|HKG",
+        icon: `${iconBase}/Hong_Kong.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🇺🇸 美国节点",
+        type: "url-test",
+        "include-all": true,
+        filter: "(?i)🇺🇸|美|US|States|American|USA",
+        icon: `${iconBase}/United_States.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🇸🇬 新加坡节点",
+        type: "url-test",
+        "include-all": true,
+        filter: "(?i)🇸🇬|坡|狮城|SG|Singapore|SGP",
+        icon: `${iconBase}/Singapore.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🇯🇵 日本节点",
+        type: "url-test",
+        "include-all": true,
+        filter: "(?i)🇯🇵|日|JP|Japan|JPN",
+        icon: `${iconBase}/Japan.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🇬🇧 英国节点",
+        type: "url-test",
+        "include-all": true,
+        filter: "(?i)🇬🇧|英|UK|Britain|United Kingdom|GBR",
+        icon: `${iconBase}/United_Kingdom.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🇨🇦 加拿大节点",
+        type: "url-test",
+        "include-all": true,
+        filter: "(?i)🇨🇦|加|CA|Canada|CAN",
+        icon: `${iconBase}/Canada.png`
+      },
+      {
+        ...groupBaseOption,
+        name: "🇰🇷 韩国节点",
+        type: "url-test",
+        "include-all": true,
+        filter: "(?i)🇰🇷|韩|KR|Korea|KOR",
+        icon: `${iconBase}/Korea.png`
+      },
+
+      // === 兜底规则 ===
+      {
+        ...groupBaseOption,
+        name: "🐟 Final",
+        type: "select",
+        proxies: ["🚀 选择代理", "♻️ 自动选择", "DIRECT"],
+        icon: `${iconBase}/Final.png`
+      }
+    ];
+
+    // 覆盖规则
+    config["rules"] = rules;
+
+    // 覆盖规则集
+    config["rule-providers"] = ruleProviders;
+
+    // 添加脚本配置
+    config["script"] = {
+      shortcuts: {
+        quic: "network == 'udp' and dst_port == 443"
+      }
+    };
+
+    // 为所有节点启用 UDP
+    if (config["proxies"]) {
+      config["proxies"].forEach(proxy => {
+        proxy.udp = true;
+      });
+      console.log(`✅ 已为 ${config["proxies"].length} 个节点启用 UDP`);
+    }
+
+    console.log("🎉 配置处理完成 - 终极AI工具配置已应用");
+    console.log("📦 包含：ChatGPT, Claude, Gemini, YouTube, Netflix, Telegram 等完整支持");
+    return config;
+
+  } catch (error) {
+    console.error("❌ 脚本执行出错:", error.message);
+    console.error("📍 错误堆栈:", error.stack);
+    console.log("⚠️ 返回原始配置");
+    return config;
+  }
+}
+
+// 导出配置
+module.exports = main;
