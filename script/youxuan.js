@@ -304,13 +304,22 @@ async function operator(proxies = []) {
     const args = $arguments || {};
     $.log('📝 接收到的参数:', JSON.stringify(args));
 
-    const limit = args.limit ? parseInt(args.limit) : 0; // 0 表示不限制
-    const filterType = args.type || ''; // 空表示处理所有类型
-    const tlsPorts = args.tls ? args.tls.split(',').map(p => parseInt(p.trim())) : [];
-    const nonTlsPorts = args.notls ? args.notls.split(',').map(p => parseInt(p.trim())) : [];
-    const nameFormat = args.name || null; // 自定义名称格式
-    const customUrl = args.url || null; // 自定义域名列表URL（支持多个）
-    const vlessEncryptionMode = args['vless-encryption'] || 'remove'; // 处理不兼容 VLESS 加密的方式（remove|filter|keep）
+    // ⭐ 默认参数（当 Sub-Store 没有传参时使用）
+    const defaultArgs = {
+        url: 'https://raw.githubusercontent.com/rdone4425/node/refs/heads/main/cf_ips.txt,https://raw.githubusercontent.com/rdone4425/node/refs/heads/main/subdomains.txt,https://raw.githubusercontent.com/rdone4425/node/refs/heads/main/yuming.txt',
+        'vless-encryption': 'remove'  // 自动清理不兼容 VLESS 字段
+    };
+
+    // 合并参数（用户参数优先）
+    const finalArgs = { ...defaultArgs, ...args };
+
+    const limit = finalArgs.limit ? parseInt(finalArgs.limit) : 0; // 0 表示不限制
+    const filterType = finalArgs.type || ''; // 空表示处理所有类型
+    const tlsPorts = finalArgs.tls ? finalArgs.tls.split(',').map(p => parseInt(p.trim())) : [];
+    const nonTlsPorts = finalArgs.notls ? finalArgs.notls.split(',').map(p => parseInt(p.trim())) : [];
+    const nameFormat = finalArgs.name || null; // 自定义名称格式
+    const customUrl = finalArgs.url || null; // 自定义域名列表URL（支持多个）
+    const vlessEncryptionMode = finalArgs['vless-encryption'] || 'remove'; // 处理不兼容 VLESS 加密的方式（remove|filter|keep）
 
     try {
         $.log('🚀 开始处理节点...');
