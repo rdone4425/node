@@ -128,6 +128,18 @@ function isTLSEnabled(proxy) {
     return proxy.tls === true || proxy.tls === 'tls';
 }
 
+// 检查 VLESS 节点是否有不兼容的加密方式
+function hasIncompatibleEncryption(proxy) {
+    if (proxy.type !== 'vless') {
+        return false;
+    }
+
+    return proxy.encryption &&
+        (proxy.encryption.includes('mlkem') ||
+         proxy.encryption.includes('plus') ||
+         proxy.encryption.length > 100);
+}
+
 // 替换服务器地址和端口
 function replaceServerAddress(proxy, newAddress, comment = '', port = null, nameFormat = null, index = 1, globalIndex = 1) {
     const newProxy = JSON.parse(JSON.stringify(proxy)); // 深拷贝
@@ -213,6 +225,18 @@ async function operator(proxies = []) {
         $.log('🚀 开始处理节点...');
         $.log(`📊 原始节点数: ${proxies.length}`);
 
+        // 统计有不兼容加密的节点
+        let incompatibleCount = 0;
+        proxies.forEach(proxy => {
+            if (hasIncompatibleEncryption(proxy)) {
+                incompatibleCount++;
+                $.log(`⏭️ 跳过节点 ${proxy.name}，具有不兼容的加密方式`);
+            }
+        });
+        if (incompatibleCount > 0) {
+            $.log(`ℹ️ 共有 ${incompatibleCount} 个节点含有不兼容的加密，将保留原样`);
+        }
+
         // 显示端口配置
         if (tlsPorts.length > 0 || nonTlsPorts.length > 0) {
             $.log('🔧 端口配置:');
@@ -238,6 +262,11 @@ async function operator(proxies = []) {
                 $.log('📝 只修改节点名称模式');
                 let globalIndex = 1;
                 const newProxies = proxies.map(proxy => {
+                    // 跳过有不兼容加密的 VLESS 节点
+                    if (hasIncompatibleEncryption(proxy)) {
+                        return proxy;
+                    }
+
                     const newProxy = JSON.parse(JSON.stringify(proxy));
 
                     // 检查是否包含占位符
@@ -284,7 +313,7 @@ async function operator(proxies = []) {
         let nonTlsCount = 0;
         let globalIndex = 1; // 全局索引，确保所有节点名称唯一
 
-        proxies.forEach((proxy) => {
+        cleanedProxies.forEach((proxy) => {
             // 类型过滤
             if (filterType && proxy.type !== filterType) {
                 newProxies.push(proxy); // 保留不匹配的节点
@@ -335,8 +364,10 @@ async function operator(proxies = []) {
     } catch (error) {
         $.error('❌ 错误: ' + error.message);
         $.error('📍 错误位置: ' + (error.stack || '未知'));
-        $.error('⚠️ 返回原始节点列表');
-        return proxies; // 出错时返回原始节点
+        $.error('⚠️ 返回清理后的节点列表');
+        // 出错时也返回清理后的节点
+        const cleanedProxies = proxies.map(proxy => cleanVlessProxy(proxy));
+        return cleanedProxies;
     }
 }
 
