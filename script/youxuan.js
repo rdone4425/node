@@ -9,18 +9,13 @@
  * - notls=N: 非 TLS 节点使用的端口，支持多端口如 80,8080,2052（默认保持原端口）
  * - name=格式: 自定义节点名称格式，支持占位符：{name}原名、{domain}域名、{comment}注释、{port}端口、{index}序号、{global}全局序号
  * - url=地址: 自定义优选域名列表URL，支持多个URL用逗号分隔（可选）
- * - vless-encryption=处理方式: 如何处理不兼容的 VLESS 加密（remove|filter|keep，默认 remove）
- *   - remove: 移除 encryption 字段（推荐，Loon 可用）
- *   - filter: 完全过滤掉这些节点
- *   - keep: 保留原样（会导致 Sub-Store 报错）
  *
  * 示例：
  * - 基础使用: https://你的脚本地址/vmess-optimizer.js#limit=10
  * - 自定义端口: https://你的脚本地址/vmess-optimizer.js#tls=443&notls=80
  * - 自定义名称: https://你的脚本地址/vmess-optimizer.js#name={domain}-{comment}
- * - 移除不兼容VLESS加密: https://你的脚本地址/vmess-optimizer.js#vless-encryption=remove
- * - 过滤掉不兼容VLESS节点: https://你的脚本地址/vmess-optimizer.js#vless-encryption=filter
- * - 完整配置: https://你的脚本地址/vmess-optimizer.js#type=vmess&limit=15&tls=443&notls=8080&vless-encryption=remove
+ * - 多个URL源: https://你的脚本地址/vmess-optimizer.js#url=https://url1.txt,https://url2.txt
+ * - 完整配置: https://你的脚本地址/vmess-optimizer.js#type=vmess&limit=15&tls=443&notls=8080
  */
 
 // 从单个 URL 获取域名列表
@@ -133,106 +128,9 @@ function isTLSEnabled(proxy) {
     return proxy.tls === true || proxy.tls === 'tls';
 }
 
-// 检查 VLESS 节点是否有不兼容的配置
-function hasIncompatibleVlessConfig(proxy) {
-    if (proxy.type !== 'vless') {
-        return false;
-    }
-
-    // 检查超长的 encryption 字段
-    if (proxy.encryption &&
-        (proxy.encryption.includes('mlkem') ||
-         proxy.encryption.includes('plus') ||
-         proxy.encryption.length > 100)) {
-        return true;
-    }
-
-    // 检查 XTLS flow 配置
-    if (proxy.flow && (proxy.flow.includes('xtls') || proxy.flow.includes('rprx'))) {
-        return true;
-    }
-
-    // 检查其他可能不兼容的配置
-    if (proxy.reality) {
-        return true;
-    }
-
-    return false;
-}
-
-// 清理 VLESS 节点的不兼容字段
-function cleanVlessProxy(proxy) {
-    if (proxy.type !== 'vless') {
-        return proxy;
-    }
-
-    const cleaned = JSON.parse(JSON.stringify(proxy));
-    let modified = false;
-
-    // 移除不兼容的 encryption 字段
-    if (cleaned.encryption &&
-        (cleaned.encryption.includes('mlkem') ||
-         cleaned.encryption.includes('plus') ||
-         cleaned.encryption.length > 100)) {
-        delete cleaned.encryption;
-        modified = true;
-    }
-
-    // 移除 XTLS flow 配置
-    if (cleaned.flow && (cleaned.flow.includes('xtls') || cleaned.flow.includes('rprx'))) {
-        delete cleaned.flow;
-        modified = true;
-    }
-
-    // 移除 reality 配置
-    if (cleaned.reality) {
-        delete cleaned.reality;
-        modified = true;
-    }
-
-    return modified ? cleaned : proxy;
-}
-
-// 处理不兼容的 VLESS 配置
-function handleIncompatibleVlessEncryption(proxy, mode) {
-    // 检查是否有不兼容配置
-    if (!hasIncompatibleVlessConfig(proxy)) {
-        return proxy; // 没有不兼容配置，返回原样
-    }
-
-    if (mode === 'remove') {
-        // remove 模式：清理不兼容字段
-        return cleanVlessProxy(proxy);
-    } else if (mode === 'filter') {
-        // filter 模式：返回 null（被过滤掉）
-        return null;
-    }
-    // keep 模式：保留原样
-    return proxy;
-}
-
 // 替换服务器地址和端口
 function replaceServerAddress(proxy, newAddress, comment = '', port = null, nameFormat = null, index = 1, globalIndex = 1) {
     const newProxy = JSON.parse(JSON.stringify(proxy)); // 深拷贝
-
-    // ⭐ 新增：清理不兼容的 VLESS 字段
-    if (newProxy.type === 'vless') {
-        // 移除超长 encryption
-        if (newProxy.encryption &&
-            (newProxy.encryption.includes('mlkem') ||
-             newProxy.encryption.includes('plus') ||
-             newProxy.encryption.length > 100)) {
-            delete newProxy.encryption;
-        }
-        // 移除 XTLS flow
-        if (newProxy.flow && (newProxy.flow.includes('xtls') || newProxy.flow.includes('rprx'))) {
-            delete newProxy.flow;
-        }
-        // 移除 reality
-        if (newProxy.reality) {
-            delete newProxy.reality;
-        }
-    }
 
     // 处理不同类型的节点 - 替换服务器地址
     if (proxy.type === 'vmess' || proxy.type === 'vless') {
@@ -304,43 +202,16 @@ async function operator(proxies = []) {
     const args = $arguments || {};
     $.log('📝 接收到的参数:', JSON.stringify(args));
 
-    // ⭐ 默认参数（当 Sub-Store 没有传参时使用）
-    const defaultArgs = {
-        'vless-encryption': 'remove'  // 自动清理不兼容 VLESS 字段
-    };
-
-    // 合并参数（用户参数优先）
-    const finalArgs = { ...defaultArgs, ...args };
-
-    const limit = finalArgs.limit ? parseInt(finalArgs.limit) : 0; // 0 表示不限制
-    const filterType = finalArgs.type || ''; // 空表示处理所有类型
-    const tlsPorts = finalArgs.tls ? finalArgs.tls.split(',').map(p => parseInt(p.trim())) : [];
-    const nonTlsPorts = finalArgs.notls ? finalArgs.notls.split(',').map(p => parseInt(p.trim())) : [];
-    const nameFormat = finalArgs.name || null; // 自定义名称格式
-    const customUrl = finalArgs.url || null; // 自定义域名列表URL（支持多个）
-    const vlessEncryptionMode = finalArgs['vless-encryption'] || 'remove'; // 处理不兼容 VLESS 加密的方式（remove|filter|keep）
+    const limit = args.limit ? parseInt(args.limit) : 0; // 0 表示不限制
+    const filterType = args.type || ''; // 空表示处理所有类型
+    const tlsPorts = args.tls ? args.tls.split(',').map(p => parseInt(p.trim())) : [];
+    const nonTlsPorts = args.notls ? args.notls.split(',').map(p => parseInt(p.trim())) : [];
+    const nameFormat = args.name || null; // 自定义名称格式
+    const customUrl = args.url || null; // 自定义域名列表URL（支持多个）
 
     try {
         $.log('🚀 开始处理节点...');
         $.log(`📊 原始节点数: ${proxies.length}`);
-
-        // 统计有不兼容配置的节点
-        let incompatibleCount = 0;
-        let filteredCount = 0;
-        proxies.forEach(proxy => {
-            if (hasIncompatibleVlessConfig(proxy)) {
-                incompatibleCount++;
-            }
-        });
-        if (incompatibleCount > 0) {
-            const modeText = {
-                'remove': '清理不兼容字段',
-                'filter': '完全过滤掉',
-                'keep': '保留原样（会报错）'
-            };
-            $.log(`ℹ️ 检测到 ${incompatibleCount} 个 VLESS 节点含有不兼容配置`);
-            $.log(`   处理方式: ${modeText[vlessEncryptionMode] || '未知'}`);
-        }
 
         // 显示端口配置
         if (tlsPorts.length > 0 || nonTlsPorts.length > 0) {
@@ -366,16 +237,8 @@ async function operator(proxies = []) {
             if (nameFormat) {
                 $.log('📝 只修改节点名称模式');
                 let globalIndex = 1;
-                const newProxies = [];
-                proxies.forEach(proxy => {
-                    // 处理不兼容的 VLESS 加密
-                    const processed = handleIncompatibleVlessEncryption(proxy, vlessEncryptionMode);
-                    if (processed === null) {
-                        // 被过滤掉
-                        return;
-                    }
-
-                    const newProxy = JSON.parse(JSON.stringify(processed));
+                const newProxies = proxies.map(proxy => {
+                    const newProxy = JSON.parse(JSON.stringify(proxy));
 
                     // 检查是否包含占位符
                     const hasPlaceholder = /\{(name|domain|comment|port|index|global)\}/.test(nameFormat);
@@ -392,7 +255,7 @@ async function operator(proxies = []) {
                         newProxy.name = `${nameFormat} #${globalIndex}`;
                     }
                     globalIndex++;
-                    newProxies.push(newProxy);
+                    return newProxy;
                 });
                 $.log(`✅ 处理完成！修改了 ${newProxies.length} 个节点名称`);
 
@@ -400,15 +263,8 @@ async function operator(proxies = []) {
                 const finalProxies = deduplicateProxies(newProxies);
                 return finalProxies;
             } else {
-                $.log('⚠️ 没有优选域名也没有名称格式，处理不兼容的加密');
-                const newProxies = [];
-                proxies.forEach(proxy => {
-                    const processed = handleIncompatibleVlessEncryption(proxy, vlessEncryptionMode);
-                    if (processed !== null) {
-                        newProxies.push(processed);
-                    }
-                });
-                return newProxies;
+                $.log('⚠️ 没有优选域名也没有名称格式，返回原始节点');
+                return proxies;
             }
         }
 
@@ -424,28 +280,19 @@ async function operator(proxies = []) {
         // 生成新节点
         const newProxies = [];
         let processedCount = 0;
-        let skippedCount = 0;
         let tlsCount = 0;
         let nonTlsCount = 0;
         let globalIndex = 1; // 全局索引，确保所有节点名称唯一
 
         proxies.forEach((proxy) => {
-            // 处理不兼容的 VLESS 加密
-            const processed = handleIncompatibleVlessEncryption(proxy, vlessEncryptionMode);
-            if (processed === null) {
-                // 被过滤掉
-                skippedCount++;
-                return;
-            }
-
             // 类型过滤
-            if (filterType && processed.type !== filterType) {
-                newProxies.push(processed); // 保留不匹配的节点
+            if (filterType && proxy.type !== filterType) {
+                newProxies.push(proxy); // 保留不匹配的节点
                 return;
             }
 
             // 统计 TLS 状态
-            const useTLS = isTLSEnabled(processed);
+            const useTLS = isTLSEnabled(proxy);
             if (useTLS) tlsCount++;
             else nonTlsCount++;
 
@@ -458,12 +305,12 @@ async function operator(proxies = []) {
                 if (ports.length > 0) {
                     // 有指定端口，为每个端口生成节点
                     ports.forEach((port) => {
-                        const newProxy = replaceServerAddress(processed, item.domain, item.comment, port, nameFormat, nodeIndex, globalIndex++);
+                        const newProxy = replaceServerAddress(proxy, item.domain, item.comment, port, nameFormat, nodeIndex, globalIndex++);
                         newProxies.push(newProxy);
                     });
                 } else {
                     // 没有指定端口，保持原端口
-                    const newProxy = replaceServerAddress(processed, item.domain, item.comment, null, nameFormat, nodeIndex, globalIndex++);
+                    const newProxy = replaceServerAddress(proxy, item.domain, item.comment, null, nameFormat, nodeIndex, globalIndex++);
                     newProxies.push(newProxy);
                 }
                 nodeIndex++;
@@ -474,9 +321,6 @@ async function operator(proxies = []) {
 
         $.log(`✅ 处理完成！`);
         $.log(`📈 处理节点数: ${processedCount}`);
-        if (skippedCount > 0) {
-            $.log(`⏭️ 跳过节点数: ${skippedCount}`);
-        }
         $.log(`   └─ TLS 节点: ${tlsCount}`);
         $.log(`   └─ 非 TLS 节点: ${nonTlsCount}`);
         $.log(`📊 生成节点数: ${newProxies.length}`);
