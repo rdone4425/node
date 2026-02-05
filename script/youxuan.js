@@ -309,11 +309,19 @@ async function operator(proxies = []) {
         // 生成新节点
         const newProxies = [];
         let processedCount = 0;
+        let skippedCount = 0;
         let tlsCount = 0;
         let nonTlsCount = 0;
         let globalIndex = 1; // 全局索引，确保所有节点名称唯一
 
-        cleanedProxies.forEach((proxy) => {
+        proxies.forEach((proxy) => {
+            // 跳过有不兼容加密的 VLESS 节点
+            if (hasIncompatibleEncryption(proxy)) {
+                newProxies.push(proxy); // 保留原样
+                skippedCount++;
+                return;
+            }
+
             // 类型过滤
             if (filterType && proxy.type !== filterType) {
                 newProxies.push(proxy); // 保留不匹配的节点
@@ -350,6 +358,9 @@ async function operator(proxies = []) {
 
         $.log(`✅ 处理完成！`);
         $.log(`📈 处理节点数: ${processedCount}`);
+        if (skippedCount > 0) {
+            $.log(`⏭️ 跳过节点数: ${skippedCount}`);
+        }
         $.log(`   └─ TLS 节点: ${tlsCount}`);
         $.log(`   └─ 非 TLS 节点: ${nonTlsCount}`);
         $.log(`📊 生成节点数: ${newProxies.length}`);
@@ -364,10 +375,8 @@ async function operator(proxies = []) {
     } catch (error) {
         $.error('❌ 错误: ' + error.message);
         $.error('📍 错误位置: ' + (error.stack || '未知'));
-        $.error('⚠️ 返回清理后的节点列表');
-        // 出错时也返回清理后的节点
-        const cleanedProxies = proxies.map(proxy => cleanVlessProxy(proxy));
-        return cleanedProxies;
+        $.error('⚠️ 返回原始节点列表');
+        return proxies; // 出错时返回原始节点
     }
 }
 
