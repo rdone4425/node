@@ -174,21 +174,18 @@ function cleanVlessProxy(proxy) {
         (cleaned.encryption.includes('mlkem') ||
          cleaned.encryption.includes('plus') ||
          cleaned.encryption.length > 100)) {
-        $.log(`  ✏️ 移除 ${cleaned.name} 的 encryption 字段`);
         delete cleaned.encryption;
         modified = true;
     }
 
     // 移除 XTLS flow 配置
     if (cleaned.flow && (cleaned.flow.includes('xtls') || cleaned.flow.includes('rprx'))) {
-        $.log(`  ✏️ 移除 ${cleaned.name} 的 flow 字段: ${cleaned.flow}`);
         delete cleaned.flow;
         modified = true;
     }
 
     // 移除 reality 配置
     if (cleaned.reality) {
-        $.log(`  ✏️ 移除 ${cleaned.name} 的 reality 字段`);
         delete cleaned.reality;
         modified = true;
     }
@@ -208,7 +205,6 @@ function handleIncompatibleVlessEncryption(proxy, mode) {
         return cleanVlessProxy(proxy);
     } else if (mode === 'filter') {
         // filter 模式：返回 null（被过滤掉）
-        $.log(`🗑️ 过滤掉 ${proxy.name}（含有不兼容配置）`);
         return null;
     }
     // keep 模式：保留原样
@@ -322,6 +318,7 @@ async function operator(proxies = []) {
 
         // 统计有不兼容配置的节点
         let incompatibleCount = 0;
+        let filteredCount = 0;
         proxies.forEach(proxy => {
             if (hasIncompatibleVlessConfig(proxy)) {
                 incompatibleCount++;
