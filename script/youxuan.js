@@ -1,390 +1,241 @@
 /**
- * Sub-Store VMess 优选域名批量生成器
+ * Cloudflare Worker - 订阅转换器
+ * 用于处理不兼容的 VLESS 节点配置
  *
- * 用法：在 Sub-Store 脚本操作中添加此脚本
- * 支持的参数：
- * - limit=N: 限制每个节点生成的优选节点数量（默认全部）
- * - type=vmess: 只处理 vmess 类型节点（默认处理所有）
- * - tls=N: TLS 节点使用的端口，支持多端口如 443,8443,2053（默认保持原端口）
- * - notls=N: 非 TLS 节点使用的端口，支持多端口如 80,8080,2052（默认保持原端口）
- * - name=格式: 自定义节点名称格式，支持占位符：{name}原名、{domain}域名、{comment}注释、{port}端口、{index}序号、{global}全局序号
- * - url=地址: 自定义优选域名列表URL，支持多个URL用逗号分隔（可选）
+ * 部署到 Cloudflare Workers
+ * 使用方式: https://your-worker.workers.dev/?url=订阅链接&mode=remove
  *
- * 示例：
- * - 基础使用: https://你的脚本地址/vmess-optimizer.js#limit=10
- * - 自定义端口: https://你的脚本地址/vmess-optimizer.js#tls=443&notls=80
- * - 自定义名称: https://你的脚本地址/vmess-optimizer.js#name={domain}-{comment}
- * - 多个URL源: https://你的脚本地址/vmess-optimizer.js#url=https://url1.txt,https://url2.txt
- * - 完整配置: https://你的脚本地址/vmess-optimizer.js#type=vmess&limit=15&tls=443&notls=8080
+ * 参数说明:
+ * - url: 原始订阅链接（必需）
+ * - mode: 处理模式 (remove|filter)
+ *   - remove: 清理不兼容字段（默认）
+ *   - filter: 完全过滤掉不兼容节点
  */
 
-// 从单个 URL 获取域名列表
-async function fetchDomainsFromUrl(url) {
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.text();
-
-    // 解析域名列表
-    const domains = data.split('\n')
-        .map(line => line.trim())
-        .filter(line => line && !line.startsWith('#'))
-        .map(line => {
-            // 移除注释部分（#后面的内容）
-            const domain = line.split('#')[0].trim();
-            const comment = line.includes('#') ? line.split('#')[1].trim() : '';
-            return { domain, comment };
-        })
-        .filter(item => item.domain);
-
-    return domains;
-}
-
-// 从多个 URL 获取并合并域名列表
-async function fetchOptimalDomains(customUrl) {
-    if (!customUrl) {
-        return []; // 如果没有 URL，返回空数组
-    }
-
-    // 使用自定义 URL
-    const urls = customUrl.split(',').map(u => u.trim()).filter(u => u);
-
-    if (urls.length === 0) {
-        return [];
-    }
-
-    const allDomains = [];
-    const domainMap = new Map(); // 用于去重，key 为 domain，value 为 {domain, comments: []}
-
-    // 从每个 URL 获取域名
-    for (let i = 0; i < urls.length; i++) {
-        const url = urls[i];
-        try {
-            console.log(`📥 [${i + 1}/${urls.length}] 正在获取: ${url}`);
-            const domains = await fetchDomainsFromUrl(url);
-            console.log(`✅ [${i + 1}/${urls.length}] 成功获取 ${domains.length} 个域名`);
-
-            // 合并到总列表，并去重
-            domains.forEach(item => {
-                if (domainMap.has(item.domain)) {
-                    // 域名已存在，合并注释
-                    const existing = domainMap.get(item.domain);
-                    if (item.comment && !existing.comments.includes(item.comment)) {
-                        existing.comments.push(item.comment);
-                    }
-                } else {
-                    // 新域名
-                    domainMap.set(item.domain, {
-                        domain: item.domain,
-                        comments: item.comment ? [item.comment] : []
-                    });
-                }
-            });
-        } catch (error) {
-            console.error(`❌ [${i + 1}/${urls.length}] ${error.message}`);
-            // 继续处理下一个 URL
-        }
-    }
-
-    // 转换为最终格式
-    domainMap.forEach((value, domain) => {
-        allDomains.push({
-            domain: domain,
-            comment: value.comments.join(' | ') // 多个注释用 | 分隔
-        });
-    });
-
-    if (allDomains.length === 0) {
-        throw new Error('所有源都获取失败，没有可用的优选域名');
-    }
-
-    console.log(`🎉 总计获取 ${allDomains.length} 个唯一域名（已去重）`);
-
-    return allDomains;
-}
-
-// 检查节点是否使用 TLS
-function isTLSEnabled(proxy) {
-    // VMess/VLess 检查
-    if (proxy.type === 'vmess' || proxy.type === 'vless') {
-        return proxy.tls === 'tls' || proxy.tls === true || proxy.tls === 1;
-    }
-
-    // Trojan 默认使用 TLS
-    if (proxy.type === 'trojan') {
-        return true;
-    }
-
-    // Shadowsocks 检查 plugin
-    if (proxy.type === 'ss') {
-        return proxy.plugin && (
-            proxy.plugin.includes('obfs') && proxy['plugin-opts']?.mode === 'tls' ||
-            proxy.plugin.includes('v2ray-plugin') && proxy['plugin-opts']?.tls === true
-        );
-    }
-
-    // 其他类型检查 tls 字段
-    return proxy.tls === true || proxy.tls === 'tls';
-}
-
-// 检查 VLESS 节点是否有不兼容的加密方式
-function hasIncompatibleEncryption(proxy) {
-    if (proxy.type !== 'vless') {
-        return false;
-    }
-
-    return proxy.encryption &&
-        (proxy.encryption.includes('mlkem') ||
-         proxy.encryption.includes('plus') ||
-         proxy.encryption.length > 100);
-}
-
-// 替换服务器地址和端口
-function replaceServerAddress(proxy, newAddress, comment = '', port = null, nameFormat = null, index = 1, globalIndex = 1) {
-    const newProxy = JSON.parse(JSON.stringify(proxy)); // 深拷贝
-
-    // 处理不同类型的节点 - 替换服务器地址
-    if (proxy.type === 'vmess' || proxy.type === 'vless') {
-        newProxy.server = newAddress;
-    } else if (proxy.type === 'ss' || proxy.type === 'trojan') {
-        newProxy.server = newAddress;
-    } else {
-        // 其他类型也尝试替换 server 字段
-        if (newProxy.server) {
-            newProxy.server = newAddress;
-        }
-    }
-
-    // 设置端口
-    if (port) {
-        newProxy.port = port;
-    }
-
-    // 更新节点名称 - 确保唯一性
-    if (nameFormat) {
-        // 使用自定义格式，然后在最后加上序号
-        const customName = nameFormat
-            .replace(/\{name\}/g, proxy.name)
-            .replace(/\{domain\}/g, newAddress)
-            .replace(/\{comment\}/g, comment || '')
-            .replace(/\{port\}/g, newProxy.port)
-            .replace(/\{index\}/g, index);
-        // 在自定义名称后面加上全局序号
-        newProxy.name = `${customName} #${globalIndex}`;
-    } else {
-        // 默认格式：只保留原名，不添加域名和端口后缀
-        newProxy.name = proxy.name;
-    }
-
-    return newProxy;
-}
-
-// 去重并为重复的节点添加序号
-function deduplicateProxies(proxies) {
-    const nameCount = new Map();
-    const result = [];
-
-    // 第一遍：统计名称出现次数
-    proxies.forEach(proxy => {
-        const name = proxy.name;
-        nameCount.set(name, (nameCount.get(name) || 0) + 1);
-    });
-
-    // 第二遍：对重复的节点添加序号
-    const nameCounter = new Map();
-    proxies.forEach(proxy => {
-        if (nameCount.get(proxy.name) > 1) {
-            // 存在重复，需要添加序号
-            const index = (nameCounter.get(proxy.name) || 0) + 1;
-            nameCounter.set(proxy.name, index);
-            proxy.name = `${proxy.name} #${index}`;
-        }
-        result.push(proxy);
-    });
-
-    return result;
-}
-
-// 主处理函数
-async function operator(proxies = []) {
-    const $ = new Env('VMess 优选生成器');
-
-    // 获取参数
-    const args = $arguments || {};
-    $.log('📝 接收到的参数:', JSON.stringify(args));
-
-    const limit = args.limit ? parseInt(args.limit) : 0; // 0 表示不限制
-    const filterType = args.type || ''; // 空表示处理所有类型
-    const tlsPorts = args.tls ? args.tls.split(',').map(p => parseInt(p.trim())) : [];
-    const nonTlsPorts = args.notls ? args.notls.split(',').map(p => parseInt(p.trim())) : [];
-    const nameFormat = args.name || null; // 自定义名称格式
-    const customUrl = args.url || null; // 自定义域名列表URL（支持多个）
-
+export default {
+  async fetch(request, env, ctx) {
     try {
-        $.log('🚀 开始处理节点...');
-        $.log(`📊 原始节点数: ${proxies.length}`);
+      const url = new URL(request.url);
+      const sourceUrl = url.searchParams.get('url');
+      const mode = url.searchParams.get('mode') || 'remove';
 
-        // 统计有不兼容加密的节点
-        let incompatibleCount = 0;
-        proxies.forEach(proxy => {
-            if (hasIncompatibleEncryption(proxy)) {
-                incompatibleCount++;
-                $.log(`⏭️ 跳过节点 ${proxy.name}，具有不兼容的加密方式`);
-            }
+      // 验证参数
+      if (!sourceUrl) {
+        return new Response('Error: url parameter is required', { status: 400 });
+      }
+
+      // 获取原始订阅
+      const response = await fetch(sourceUrl);
+      if (!response.ok) {
+        return new Response(`Error: Failed to fetch subscription (${response.status})`, {
+          status: 500
         });
-        if (incompatibleCount > 0) {
-            $.log(`ℹ️ 共有 ${incompatibleCount} 个节点含有不兼容的加密，将保留原样`);
-        }
+      }
 
-        // 显示端口配置
-        if (tlsPorts.length > 0 || nonTlsPorts.length > 0) {
-            $.log('🔧 端口配置:');
-            if (tlsPorts.length > 0) $.log(`   TLS 端口: ${tlsPorts.join(', ')}`);
-            if (nonTlsPorts.length > 0) $.log(`   非 TLS 端口: ${nonTlsPorts.join(', ')}`);
-        }
+      const contentType = response.headers.get('content-type');
 
-        // 如果没有节点，直接返回
-        if (proxies.length === 0) {
-            $.log('⚠️ 没有节点需要处理');
-            return proxies;
-        }
+      // 判断是否为 base64 编码
+      const text = await response.text();
+      const isBase64 = !text.includes('\n') && text.length > 100;
 
-        // 获取优选域名列表
-        $.log('🌐 正在获取优选域名列表...');
-        const optimalDomains = await fetchOptimalDomains(customUrl);
+      let subscriptionContent;
+      if (isBase64) {
+        // Base64 编码的订阅
+        subscriptionContent = atob(text);
+      } else {
+        // 纯文本订阅
+        subscriptionContent = text;
+      }
 
-        if (optimalDomains.length === 0) {
-            $.log('⚠️ 未提供优选域名URL或获取失败');
+      // 处理订阅
+      const processed = processSubscription(subscriptionContent, mode);
 
-            // 如果有 name 参数，只修改节点名称
-            if (nameFormat) {
-                $.log('📝 只修改节点名称模式');
-                let globalIndex = 1;
-                const newProxies = proxies.map(proxy => {
-                    // 跳过有不兼容加密的 VLESS 节点
-                    if (hasIncompatibleEncryption(proxy)) {
-                        return proxy;
-                    }
+      // 返回结果（保持原始格式）
+      const result = isBase64 ? btoa(processed) : processed;
 
-                    const newProxy = JSON.parse(JSON.stringify(proxy));
-
-                    // 检查是否包含占位符
-                    const hasPlaceholder = /\{(name|domain|comment|port|index|global)\}/.test(nameFormat);
-
-                    if (hasPlaceholder) {
-                        newProxy.name = nameFormat
-                            .replace(/\{name\}/g, proxy.name)
-                            .replace(/\{domain\}/g, proxy.server || '')
-                            .replace(/\{comment\}/g, '')
-                            .replace(/\{port\}/g, proxy.port || '')
-                            .replace(/\{index\}/g, globalIndex)
-                            .replace(/\{global\}/g, globalIndex);
-                    } else {
-                        newProxy.name = `${nameFormat} #${globalIndex}`;
-                    }
-                    globalIndex++;
-                    return newProxy;
-                });
-                $.log(`✅ 处理完成！修改了 ${newProxies.length} 个节点名称`);
-
-                // 去重并为重复的节点添加序号
-                const finalProxies = deduplicateProxies(newProxies);
-                return finalProxies;
-            } else {
-                $.log('⚠️ 没有优选域名也没有名称格式，返回原始节点');
-                return proxies;
-            }
-        }
-
-        $.log(`✅ 成功获取 ${optimalDomains.length} 个优选域名`);
-
-        // 应用限制
-        const domainsToUse = limit > 0 ? optimalDomains.slice(0, limit) : optimalDomains;
-        $.log(`🔄 将为每个节点生成 ${domainsToUse.length} 个优选版本`);
-
-        // 显示前 5 个域名
-        $.log('📋 前5个优选域名:', domainsToUse.slice(0, 5).map(d => d.domain).join(', '));
-
-        // 生成新节点
-        const newProxies = [];
-        let processedCount = 0;
-        let skippedCount = 0;
-        let tlsCount = 0;
-        let nonTlsCount = 0;
-        let globalIndex = 1; // 全局索引，确保所有节点名称唯一
-
-        proxies.forEach((proxy) => {
-            // 跳过有不兼容加密的 VLESS 节点
-            if (hasIncompatibleEncryption(proxy)) {
-                newProxies.push(proxy); // 保留原样
-                skippedCount++;
-                return;
-            }
-
-            // 类型过滤
-            if (filterType && proxy.type !== filterType) {
-                newProxies.push(proxy); // 保留不匹配的节点
-                return;
-            }
-
-            // 统计 TLS 状态
-            const useTLS = isTLSEnabled(proxy);
-            if (useTLS) tlsCount++;
-            else nonTlsCount++;
-
-            // 获取当前节点应使用的端口列表
-            const ports = useTLS ? tlsPorts : nonTlsPorts;
-
-            // 为每个原始节点生成多个优选版本
-            let nodeIndex = 1;
-            domainsToUse.forEach((item) => {
-                if (ports.length > 0) {
-                    // 有指定端口，为每个端口生成节点
-                    ports.forEach((port) => {
-                        const newProxy = replaceServerAddress(proxy, item.domain, item.comment, port, nameFormat, nodeIndex, globalIndex++);
-                        newProxies.push(newProxy);
-                    });
-                } else {
-                    // 没有指定端口，保持原端口
-                    const newProxy = replaceServerAddress(proxy, item.domain, item.comment, null, nameFormat, nodeIndex, globalIndex++);
-                    newProxies.push(newProxy);
-                }
-                nodeIndex++;
-            });
-
-            processedCount++;
-        });
-
-        $.log(`✅ 处理完成！`);
-        $.log(`📈 处理节点数: ${processedCount}`);
-        if (skippedCount > 0) {
-            $.log(`⏭️ 跳过节点数: ${skippedCount}`);
-        }
-        $.log(`   └─ TLS 节点: ${tlsCount}`);
-        $.log(`   └─ 非 TLS 节点: ${nonTlsCount}`);
-        $.log(`📊 生成节点数: ${newProxies.length}`);
-        $.log(`🎯 平均每个节点生成: ${Math.round(newProxies.length / processedCount)} 个版本`);
-
-        // 去重并为重复的节点添加序号
-        const finalProxies = deduplicateProxies(newProxies);
-        $.log(`🔄 去重后节点数: ${finalProxies.length}`);
-
-        return finalProxies;
+      return new Response(result, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Disposition': 'attachment; filename="subscription.txt"',
+        },
+      });
 
     } catch (error) {
-        $.error('❌ 错误: ' + error.message);
-        $.error('📍 错误位置: ' + (error.stack || '未知'));
-        $.error('⚠️ 返回原始节点列表');
-        return proxies; // 出错时返回原始节点
+      return new Response(`Error: ${error.message}`, { status: 500 });
     }
+  },
+};
+
+/**
+ * 处理订阅内容
+ */
+function processSubscription(content, mode) {
+  const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+  const processed = [];
+
+  for (const line of lines) {
+    if (line.startsWith('ss://') || line.startsWith('ssr://') ||
+        line.startsWith('vmess://') || line.startsWith('trojan://')) {
+      // 不是 VLESS，直接保留
+      processed.push(line);
+      continue;
+    }
+
+    if (line.startsWith('vless://')) {
+      const result = processVlessProxy(line, mode);
+      if (result) {
+        processed.push(result);
+      }
+      continue;
+    }
+
+    // 其他格式直接保留
+    processed.push(line);
+  }
+
+  return processed.join('\n');
 }
 
-// Sub-Store 环境类
-function Env(name) {
+/**
+ * 处理 VLESS 代理
+ */
+function processVlessProxy(vlessLine, mode) {
+  try {
+    // 解析 VLESS URL
+    // 格式: vless://uuid@server:port?params#name
+
+    const parsed = parseVlessUrl(vlessLine);
+    if (!parsed) return vlessLine;
+
+    // 检查是否有不兼容配置
+    if (!hasIncompatibleConfig(parsed.params)) {
+      // 没有不兼容配置，返回原样
+      return vlessLine;
+    }
+
+    if (mode === 'filter') {
+      // 过滤模式：返回 null（不包含此节点）
+      console.log(`[FILTER] Removed VLESS: ${parsed.name}`);
+      return null;
+    }
+
+    // remove 模式：清理不兼容字段
+    cleanVlessParams(parsed.params);
+
+    // 重新组装 URL
+    return buildVlessUrl(parsed);
+
+  } catch (error) {
+    console.error(`Error processing VLESS: ${error.message}`);
+    return vlessLine; // 出错时返回原样
+  }
+}
+
+/**
+ * 解析 VLESS URL
+ */
+function parseVlessUrl(url) {
+  try {
+    // vless://uuid@server:port?param1=value1&param2=value2#name
+    const match = url.match(/^vless:\/\/([^@]+)@([^:]+):(\d+)\?([^#]*)#?(.*)$/);
+
+    if (!match) return null;
+
+    const [, uuid, server, port, queryString, name] = match;
+    const params = {};
+
+    // 解析查询参数
+    if (queryString) {
+      const pairs = queryString.split('&');
+      for (const pair of pairs) {
+        const [key, value] = pair.split('=');
+        if (key && value) {
+          params[decodeURIComponent(key)] = decodeURIComponent(value);
+        }
+      }
+    }
+
     return {
-        name,
-        log: (...args) => console.log(`[${name}]`, ...args),
-        error: (...args) => console.error(`[${name}]`, ...args)
+      uuid,
+      server,
+      port,
+      params,
+      name: decodeURIComponent(name || 'VLESS'),
     };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * 检查是否有不兼容配置
+ */
+function hasIncompatibleConfig(params) {
+  // 检查超长 encryption 字段
+  if (params.encryption) {
+    if (params.encryption.includes('mlkem') ||
+        params.encryption.includes('plus') ||
+        params.encryption.length > 100) {
+      return true;
+    }
+  }
+
+  // 检查 XTLS flow
+  if (params.flow) {
+    if (params.flow.includes('xtls') || params.flow.includes('rprx')) {
+      return true;
+    }
+  }
+
+  // 检查 reality
+  if (params.reality) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * 清理不兼容字段
+ */
+function cleanVlessParams(params) {
+  // 移除超长 encryption
+  if (params.encryption) {
+    if (params.encryption.includes('mlkem') ||
+        params.encryption.includes('plus') ||
+        params.encryption.length > 100) {
+      delete params.encryption;
+      console.log('[CLEAN] Removed encryption field');
+    }
+  }
+
+  // 移除 XTLS flow
+  if (params.flow) {
+    if (params.flow.includes('xtls') || params.flow.includes('rprx')) {
+      delete params.flow;
+      console.log('[CLEAN] Removed flow field');
+    }
+  }
+
+  // 移除 reality
+  if (params.reality) {
+    delete params.reality;
+    console.log('[CLEAN] Removed reality field');
+  }
+}
+
+/**
+ * 重新组装 VLESS URL
+ */
+function buildVlessUrl(parsed) {
+  // 构建查询参数
+  const queryParts = [];
+  for (const [key, value] of Object.entries(parsed.params)) {
+    queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+  }
+
+  const queryString = queryParts.length > 0 ? '?' + queryParts.join('&') : '';
+  const nameHash = parsed.name ? '#' + encodeURIComponent(parsed.name) : '';
+
+  return `vless://${parsed.uuid}@${parsed.server}:${parsed.port}${queryString}${nameHash}`;
 }
