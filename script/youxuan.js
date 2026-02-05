@@ -306,7 +306,6 @@ async function operator(proxies = []) {
 
     // ⭐ 默认参数（当 Sub-Store 没有传参时使用）
     const defaultArgs = {
-        url: 'https://raw.githubusercontent.com/rdone4425/node/refs/heads/main/cf_ips.txt,https://raw.githubusercontent.com/rdone4425/node/refs/heads/main/subdomains.txt,https://raw.githubusercontent.com/rdone4425/node/refs/heads/main/yuming.txt',
         'vless-encryption': 'remove'  // 自动清理不兼容 VLESS 字段
     };
 
