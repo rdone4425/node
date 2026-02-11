@@ -19,12 +19,12 @@ PProviders: &PProviders {type: http, interval: 86400, health-check: {enable: tru
 # 订阅链接1/2/3是用来写订阅链接的，填入即可
 # 机场名称1/2/3是用来给节点添加备注的，不用记得整行删除
 proxy-providers:
-  Airport_01:
+  全部:
     <<: *PProviders
     proxy: "故障转移"
-    url: "订阅链接"
+    url: "{{SUB_URL}}"
     override:
-      additional-prefix: '[机场名称]'
+      additional-prefix: '[全部节点]'
       skip-cert-verify: true
       udp: true
 
