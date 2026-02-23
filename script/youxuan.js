@@ -1,21 +1,24 @@
 /**
- * Sub-Store VMess 优选域名批量生成器
+ * Sub-Store 代理优选域名批量生成器 (完善版)
  *
+ * 支持协议: VMess, VLess, Trojan, Shadowsocks (SS)
  * 用法：在 Sub-Store 脚本操作中添加此脚本
+ *
  * 支持的参数：
  * - limit=N: 限制每个节点生成的优选节点数量（默认全部）
- * - type=vmess: 只处理 vmess 类型节点（默认处理所有）
+ * - type=协议名: 只处理指定协议节点，如 vmess,vless,trojan,ss（默认处理所有）
  * - tls=N: TLS 节点使用的端口，支持多端口如 443,8443,2053（默认保持原端口）
  * - notls=N: 非 TLS 节点使用的端口，支持多端口如 80,8080,2052（默认保持原端口）
  * - name=格式: 自定义节点名称格式，支持占位符：{name}原名、{domain}域名、{comment}注释、{port}端口、{index}序号、{global}全局序号
- * - url=地址: 自定义优选域名列表URL，支持多个URL用逗号分隔（可选）
+ * - url=地址: 自定义优选域名列表URL，支持多个URL用逗号分隔（必需）
+ * - debug: 启用详细调试日志
  *
  * 示例：
- * - 基础使用: https://你的脚本地址/vmess-optimizer.js#limit=10
- * - 自定义端口: https://你的脚本地址/vmess-optimizer.js#tls=443&notls=80
- * - 自定义名称: https://你的脚本地址/vmess-optimizer.js#name={domain}-{comment}
- * - 多个URL源: https://你的脚本地址/vmess-optimizer.js#url=https://url1.txt,https://url2.txt
- * - 完整配置: https://你的脚本地址/vmess-optimizer.js#type=vmess&limit=15&tls=443&notls=8080
+ * - 基础使用（所有协议）: #limit=10&url=https://xxx.txt
+ * - 只处理 VMess: #type=vmess&limit=10&url=https://xxx.txt
+ * - 自定义端口: #tls=443&notls=80&url=https://xxx.txt
+ * - 自定义名称: #name={domain}-{comment}&url=https://xxx.txt
+ * - 完整配置: #type=vless&limit=15&tls=443&notls=8080&url=https://xxx.txt
  */
 
 // 从单个 URL 获取域名列表
@@ -41,7 +44,7 @@ async function fetchDomainsFromUrl(url) {
     return domains;
 }
 
-// 从多个 URL 获取并合并域名列表
+// 从多个 URL 获取并合并域名列表（增强版本）
 async function fetchOptimalDomains(customUrl) {
     if (!customUrl) {
         return []; // 如果没有 URL，返回空数组
@@ -96,7 +99,8 @@ async function fetchOptimalDomains(customUrl) {
     });
 
     if (allDomains.length === 0) {
-        throw new Error('所有源都获取失败，没有可用的优选域名');
+        console.error('❌ 所有源都获取失败或为空，没有可用的优选域名');
+        return []; // 返回空数组而不是抛出错误
     }
 
     console.log(`🎉 总计获取 ${allDomains.length} 个唯一域名（已去重）`);
@@ -104,71 +108,111 @@ async function fetchOptimalDomains(customUrl) {
     return allDomains;
 }
 
-// 检查节点是否使用 TLS
-function isTLSEnabled(proxy) {
-    // VMess/VLess 检查
-    if (proxy.type === 'vmess' || proxy.type === 'vless') {
-        return proxy.tls === 'tls' || proxy.tls === true || proxy.tls === 1;
+// 检查节点是否使用 TLS（增强版本，支持更多协议）
+function isTLSEnabled(proxy, debug = false) {
+    const type = proxy.type?.toLowerCase() || '';
+
+    // VMess 检查
+    if (type === 'vmess') {
+        const result = proxy.tls === 'tls' || proxy.tls === true || proxy.tls === 1;
+        if (debug) console.log(`[TLS检查] VMess ${proxy.name}: ${result}`);
+        return result;
     }
 
-    // Trojan 默认使用 TLS
-    if (proxy.type === 'trojan') {
-        return true;
+    // VLess 检查
+    if (type === 'vless') {
+        const result = proxy.tls === 'tls' || proxy.tls === true || proxy.tls === 1;
+        if (debug) console.log(`[TLS检查] VLess ${proxy.name}: ${result}`);
+        return result;
+    }
+
+    // Trojan 默认使用 TLS（但也检查 tls 字段）
+    if (type === 'trojan') {
+        const result = proxy.tls !== false && proxy.tls !== 'notls' && proxy.tls !== 0;
+        if (debug) console.log(`[TLS检查] Trojan ${proxy.name}: ${result}`);
+        return result;
     }
 
     // Shadowsocks 检查 plugin
-    if (proxy.type === 'ss') {
-        return proxy.plugin && (
-            proxy.plugin.includes('obfs') && proxy['plugin-opts']?.mode === 'tls' ||
-            proxy.plugin.includes('v2ray-plugin') && proxy['plugin-opts']?.tls === true
-        );
+    if (type === 'ss' || type === 'shadowsocks') {
+        let result = false;
+        if (proxy.plugin) {
+            // obfs 插件
+            if (proxy.plugin.includes('obfs')) {
+                result = proxy['plugin-opts']?.mode === 'tls';
+            }
+            // v2ray-plugin
+            else if (proxy.plugin.includes('v2ray-plugin')) {
+                result = proxy['plugin-opts']?.tls === true;
+            }
+            // simple-obfs
+            else if (proxy.plugin.includes('simple-obfs')) {
+                result = proxy['plugin-opts']?.obfs === 'tls';
+            }
+        }
+        if (debug) console.log(`[TLS检查] SS ${proxy.name}: ${result} (plugin: ${proxy.plugin || 'none'})`);
+        return result;
     }
 
-    // 其他类型检查 tls 字段
-    return proxy.tls === true || proxy.tls === 'tls';
+    // HTTP/HTTP2 检查
+    if (type === 'http' || type === 'http2') {
+        const result = proxy.tls === true || proxy.tls === 'tls';
+        if (debug) console.log(`[TLS检查] HTTP(s) ${proxy.name}: ${result}`);
+        return result;
+    }
+
+    // 通用检查
+    const result = proxy.tls === true || proxy.tls === 'tls' || proxy.tls === 1;
+    if (debug) console.log(`[TLS检查] ${type} ${proxy.name}: ${result} (通用)`);
+    return result;
 }
 
-// 替换服务器地址和端口
+// 替换服务器地址和端口（增强版本，支持更多协议字段）
 function replaceServerAddress(proxy, newAddress, comment = '', port = null, nameFormat = null, index = 1, globalIndex = 1) {
     const newProxy = JSON.parse(JSON.stringify(proxy)); // 深拷贝
+    const type = proxy.type?.toLowerCase() || '';
 
-    // 处理不同类型的节点 - 替换服务器地址
-    if (proxy.type === 'vmess' || proxy.type === 'vless') {
+    // 替换服务器地址 - 支持多种协议
+    if (type === 'vmess' || type === 'vless' || type === 'ss' || type === 'shadowsocks' || type === 'trojan' || type === 'http' || type === 'http2') {
         newProxy.server = newAddress;
-    } else if (proxy.type === 'ss' || proxy.type === 'trojan') {
+    } else if (type === 'socks5' || type === 'socks') {
         newProxy.server = newAddress;
     } else {
-        // 其他类型也尝试替换 server 字段
-        if (newProxy.server) {
+        // fallback：尝试替换 server 字段
+        if (newProxy.server !== undefined) {
             newProxy.server = newAddress;
+        }
+        // 某些协议可能使用 host 字段
+        if (newProxy.host !== undefined && newProxy.server === undefined) {
+            newProxy.host = newAddress;
         }
     }
 
-    // 设置端口
-    if (port) {
+    // 设置端口 - 确保端口是有效的
+    if (port && port > 0 && port <= 65535) {
         newProxy.port = port;
     }
 
-    // 更新节点名称 - 确保唯一性
+    // 更新节点名称
     if (nameFormat) {
-        // 使用自定义格式，然后在最后加上序号
+        // 使用自定义格式
         const customName = nameFormat
-            .replace(/\{name\}/g, proxy.name)
+            .replace(/\{name\}/g, proxy.name || '')
             .replace(/\{domain\}/g, newAddress)
             .replace(/\{comment\}/g, comment || '')
-            .replace(/\{port\}/g, newProxy.port)
-            .replace(/\{index\}/g, index);
-        // 在自定义名称后面加上全局序号
+            .replace(/\{port\}/g, newProxy.port || '')
+            .replace(/\{index\}/g, index)
+            .replace(/\{global\}/g, globalIndex);
         newProxy.name = `${customName} #${globalIndex}`;
     } else {
-        // 默认格式：只保留原名，不添加域名和端口后缀
-        newProxy.name = proxy.name;
+        // 默认格式：添加全局序号确保唯一性
+        newProxy.name = `${proxy.name || '代理'} #${globalIndex}`;
     }
 
     return newProxy;
 }
 
-// 去重并为重复的节点添加序号
+// 去重并为重复的节点添加序号（增强版本）
 function deduplicateProxies(proxies) {
     const nameCount = new Map();
     const result = [];
@@ -182,11 +226,14 @@ function deduplicateProxies(proxies) {
     // 第二遍：对重复的节点添加序号
     const nameCounter = new Map();
     proxies.forEach(proxy => {
-        if (nameCount.get(proxy.name) > 1) {
+        const count = nameCount.get(proxy.name) || 0;
+        if (count > 1) {
             // 存在重复，需要添加序号
             const index = (nameCounter.get(proxy.name) || 0) + 1;
             nameCounter.set(proxy.name, index);
-            proxy.name = `${proxy.name} #${index}`;
+            // 如果已经有 # 标记，先移除
+            const baseName = proxy.name.replace(/ #\d+$/, '');
+            proxy.name = `${baseName} #${index}`;
         }
         result.push(proxy);
     });
@@ -194,24 +241,38 @@ function deduplicateProxies(proxies) {
     return result;
 }
 
-// 主处理函数
+// 主处理函数（增强版本）
 async function operator(proxies = []) {
-    const $ = new Env('VMess 优选生成器');
+    const $ = new Env('代理优选生成器');
 
     // 获取参数
     const args = $arguments || {};
     $.log('📝 接收到的参数:', JSON.stringify(args));
 
     const limit = args.limit ? parseInt(args.limit) : 0; // 0 表示不限制
-    const filterType = args.type || ''; // 空表示处理所有类型
-    const tlsPorts = args.tls ? args.tls.split(',').map(p => parseInt(p.trim())) : [];
-    const nonTlsPorts = args.notls ? args.notls.split(',').map(p => parseInt(p.trim())) : [];
+    const filterTypes = args.type ? args.type.toLowerCase().split(',').map(t => t.trim()) : []; // 空表示处理所有类型
+    const tlsPorts = args.tls ? args.tls.split(',').map(p => parseInt(p.trim())).filter(p => p > 0 && p <= 65535) : [];
+    const nonTlsPorts = args.notls ? args.notls.split(',').map(p => parseInt(p.trim())).filter(p => p > 0 && p <= 65535) : [];
     const nameFormat = args.name || null; // 自定义名称格式
     const customUrl = args.url || null; // 自定义域名列表URL（支持多个）
+    const debug = args.debug === '1' || args.debug === 'true'; // 调试模式
 
     try {
         $.log('🚀 开始处理节点...');
         $.log(`📊 原始节点数: ${proxies.length}`);
+
+        // 统计协议分布
+        const typeStats = {};
+        proxies.forEach(proxy => {
+            const type = proxy.type?.toLowerCase() || 'unknown';
+            typeStats[type] = (typeStats[type] || 0) + 1;
+        });
+        $.log('📋 协议分布:', JSON.stringify(typeStats));
+
+        // 显示过滤信息
+        if (filterTypes.length > 0) {
+            $.log(`🔍 过滤协议: ${filterTypes.join(', ')}`);
+        }
 
         // 显示端口配置
         if (tlsPorts.length > 0 || nonTlsPorts.length > 0) {
@@ -240,12 +301,17 @@ async function operator(proxies = []) {
                 const newProxies = proxies.map(proxy => {
                     const newProxy = JSON.parse(JSON.stringify(proxy));
 
+                    // 类型过滤
+                    if (filterTypes.length > 0 && !filterTypes.includes(proxy.type?.toLowerCase() || '')) {
+                        return newProxy;
+                    }
+
                     // 检查是否包含占位符
                     const hasPlaceholder = /\{(name|domain|comment|port|index|global)\}/.test(nameFormat);
 
                     if (hasPlaceholder) {
                         newProxy.name = nameFormat
-                            .replace(/\{name\}/g, proxy.name)
+                            .replace(/\{name\}/g, proxy.name || '')
                             .replace(/\{domain\}/g, proxy.server || '')
                             .replace(/\{comment\}/g, '')
                             .replace(/\{port\}/g, proxy.port || '')
@@ -280,21 +346,32 @@ async function operator(proxies = []) {
         // 生成新节点
         const newProxies = [];
         let processedCount = 0;
+        let skippedCount = 0;
+        const typeStats2 = {};
         let tlsCount = 0;
         let nonTlsCount = 0;
         let globalIndex = 1; // 全局索引，确保所有节点名称唯一
 
         proxies.forEach((proxy) => {
+            const proxyType = proxy.type?.toLowerCase() || 'unknown';
+
             // 类型过滤
-            if (filterType && proxy.type !== filterType) {
+            if (filterTypes.length > 0 && !filterTypes.includes(proxyType)) {
                 newProxies.push(proxy); // 保留不匹配的节点
+                skippedCount++;
                 return;
             }
 
+            // 统计协议
+            typeStats2[proxyType] = (typeStats2[proxyType] || 0) + 1;
+
             // 统计 TLS 状态
-            const useTLS = isTLSEnabled(proxy);
-            if (useTLS) tlsCount++;
-            else nonTlsCount++;
+            const useTLS = isTLSEnabled(proxy, debug);
+            if (useTLS) {
+                tlsCount++;
+            } else {
+                nonTlsCount++;
+            }
 
             // 获取当前节点应使用的端口列表
             const ports = useTLS ? tlsPorts : nonTlsPorts;
@@ -320,15 +397,26 @@ async function operator(proxies = []) {
         });
 
         $.log(`✅ 处理完成！`);
-        $.log(`📈 处理节点数: ${processedCount}`);
+        $.log(`📈 已处理节点数: ${processedCount}`);
         $.log(`   └─ TLS 节点: ${tlsCount}`);
         $.log(`   └─ 非 TLS 节点: ${nonTlsCount}`);
+        $.log(`⏭️  跳过节点数: ${skippedCount} (类型过滤)`);
+        $.log(`📊 已处理协议分布: ${JSON.stringify(typeStats2)}`);
         $.log(`📊 生成节点数: ${newProxies.length}`);
-        $.log(`🎯 平均每个节点生成: ${Math.round(newProxies.length / processedCount)} 个版本`);
+        if (processedCount > 0) {
+            $.log(`🎯 平均每个节点生成: ${Math.round(newProxies.length / processedCount)} 个版本`);
+        }
 
         // 去重并为重复的节点添加序号
         const finalProxies = deduplicateProxies(newProxies);
         $.log(`🔄 去重后节点数: ${finalProxies.length}`);
+
+        if (debug) {
+            $.log('🐛 调试信息 - 前3个节点:');
+            finalProxies.slice(0, 3).forEach((p, i) => {
+                $.log(`   [${i}] ${p.name} (${p.type}) - ${p.server}:${p.port}`);
+            });
+        }
 
         return finalProxies;
 
