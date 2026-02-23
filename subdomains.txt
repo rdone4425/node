@@ -11,4 +11,3 @@ kr6.zhangtea.ggff.net
 sg4.zhangtea.ggff.net
 sg6.zhangtea.ggff.net
 us4.zhangtea.ggff.net
-us6.zhangtea.ggff.net
