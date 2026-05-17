@@ -276,7 +276,7 @@ const rules = [
   "RULE-SET,TikTok,节点选择",
   "RULE-SET,GitHub,GitHub",
   "RULE-SET,Telegram,节点选择",
-  "RULE-SET,Twitter,节点选择",
+  "RULE-SET,Twitter,X",
   "RULE-SET,Game,节点选择",
   "RULE-SET,Global,节点选择",
   "RULE-SET,ChinaMax,DIRECT",
@@ -325,7 +325,7 @@ function main(config) {
   const filterKeywords = "官网|套餐|流量| expiring|剩余|時間|重置|URL|到期|过期|机场|group|sub|订阅|查询|续费|观看|频道|官网|客服|M3U|车费|车友|上车|通知|公告|严禁|测速";
   
   // 2. 定义地区关键词 (已分组的地区)
-  const regionKeywords = "\\bHK\\b|Hong Kong|香港|\\bTW\\b|Taiwan|台湾|\\bJP\\b|Japan|日本|\\bKR\\b|Korea|韩国|首尔|\\bSG\\b|Singapore|狮城|新加坡|\\bVN\\b|Vietnam|越南|\\bUS\\b|United States|America|美国|\\bDE\\b|Germany|德国|法兰克福";
+  const regionKeywords = "\\bHK(?:[^A-Za-z]|$)|Hong Kong|香港|\\bTW(?:[^A-Za-z]|$)|Taiwan|台湾|\\bJP(?:[^A-Za-z]|$)|Japan|日本|\\bKR(?:[^A-Za-z]|$)|Korea|韩国|首尔|\\bSG(?:[^A-Za-z]|$)|Singapore|狮城|新加坡|\\bVN(?:[^A-Za-z]|$)|Vietnam|越南|\\bUS(?:[^A-Za-z]|$)|United States|America|美国|\\bDE(?:[^A-Za-z]|$)|Germany|德国|法兰克福";
 
   // 3. 创建过滤器
   // 节点过滤器 (Global, 节点选择, 漏网之鱼 使用)
@@ -409,6 +409,13 @@ function main(config) {
     },
     {
       ...groupBaseOption,
+      "name": "X",
+      "type": "url-test",
+      "proxies": [...autoRegionGroups],
+      "icon": `${iconBase}/Twitter.png`
+    },
+    {
+      ...groupBaseOption,
       "name": "广告过滤",
       "type": "select",
       "proxies": ["REJECT", "DIRECT"],
@@ -433,7 +440,7 @@ function main(config) {
       "name": "🇭🇰 自动-HK",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)\\bHK\\b|Hong Kong|香港",
+      "filter": "(?i)\\bHK(?:[^A-Za-z]|$)|Hong Kong|香港",
       "icon": `${iconBase}/Hong_Kong.png`
     },
     {
@@ -441,7 +448,7 @@ function main(config) {
       "name": "🇹🇼 自动-TW",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)\\bTW\\b|Taiwan|台湾",
+      "filter": "(?i)\\bTW(?:[^A-Za-z]|$)|Taiwan|台湾",
       "icon": `${iconBase}/Taiwan.png`
     },
     {
@@ -449,7 +456,7 @@ function main(config) {
       "name": "🇯🇵 自动-JP",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)\\bJP\\b|Japan|日本",
+      "filter": "(?i)\\bJP(?:[^A-Za-z]|$)|Japan|日本",
       "icon": `${iconBase}/Japan.png`
     },
     {
@@ -457,7 +464,7 @@ function main(config) {
       "name": "🇰🇷 自动-KR",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)\\bKR\\b|Korea|韩国|首尔",
+      "filter": "(?i)\\bKR(?:[^A-Za-z]|$)|Korea|韩国|首尔",
       "icon": `${iconBase}/Korea.png`
     },
     {
@@ -465,7 +472,7 @@ function main(config) {
       "name": "🇸🇬 自动-SG",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)\\bSG\\b|Singapore|狮城|新加坡",
+      "filter": "(?i)\\bSG(?:[^A-Za-z]|$)|Singapore|狮城|新加坡",
       "icon": `${iconBase}/Singapore.png`
     },
     {
@@ -473,7 +480,7 @@ function main(config) {
       "name": "🇻🇳 自动-VN",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)\\bVN\\b|Vietnam|越南",
+      "filter": "(?i)\\bVN(?:[^A-Za-z]|$)|Vietnam|越南",
       "icon": `${iconBase}/Vietnam.png`
     },
     {
@@ -481,7 +488,7 @@ function main(config) {
       "name": "🇺🇸 自动-US",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)\\bUS\\b|United States|America|美国",
+      "filter": "(?i)\\bUS(?:[^A-Za-z]|$)|United States|America|美国",
       "icon": `${iconBase}/United_States.png`
     },
     {
@@ -489,7 +496,7 @@ function main(config) {
       "name": "🇩🇪 自动-DE",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)\\bDE\\b|Germany|德国|法兰克福",
+      "filter": "(?i)\\bDE(?:[^A-Za-z]|$)|Germany|德国|法兰克福",
       "icon": `${iconBase}/Germany.png`
     },
     {
