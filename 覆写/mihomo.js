@@ -325,7 +325,7 @@ function main(config) {
   const filterKeywords = "官网|套餐|流量| expiring|剩余|時間|重置|URL|到期|过期|机场|group|sub|订阅|查询|续费|观看|频道|官网|客服|M3U|车费|车友|上车|通知|公告|严禁|测速";
   
   // 2. 定义地区关键词 (已分组的地区)
-  const regionKeywords = "HK|Hong Kong|香港|TW|Taiwan|台湾|JP|Japan|日本|SG|Singapore|狮城|新加坡|US|United States|America|美国|DE|Germany|德国";
+  const regionKeywords = "\\bHK\\b|Hong Kong|香港|\\bTW\\b|Taiwan|台湾|\\bJP\\b|Japan|日本|\\bKR\\b|Korea|韩国|首尔|\\bSG\\b|Singapore|狮城|新加坡|\\bVN\\b|Vietnam|越南|\\bUS\\b|United States|America|美国|\\bDE\\b|Germany|德国|法兰克福";
 
   // 3. 创建过滤器
   // 节点过滤器 (Global, 节点选择, 漏网之鱼 使用)
@@ -338,7 +338,9 @@ function main(config) {
     "🇭🇰 自动-HK",
     "🇹🇼 自动-TW",
     "🇯🇵 自动-JP",
+    "🇰🇷 自动-KR",
     "🇸🇬 自动-SG",
+    "🇻🇳 自动-VN",
     "🇺🇸 自动-US",
     "🇩🇪 自动-DE"
   ];
@@ -431,7 +433,7 @@ function main(config) {
       "name": "🇭🇰 自动-HK",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)HK|Hong Kong|香港",
+      "filter": "(?i)\\bHK\\b|Hong Kong|香港",
       "icon": `${iconBase}/Hong_Kong.png`
     },
     {
@@ -439,7 +441,7 @@ function main(config) {
       "name": "🇹🇼 自动-TW",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)TW|Taiwan|台湾",
+      "filter": "(?i)\\bTW\\b|Taiwan|台湾",
       "icon": `${iconBase}/Taiwan.png`
     },
     {
@@ -447,23 +449,39 @@ function main(config) {
       "name": "🇯🇵 自动-JP",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)JP|Japan|日本",
+      "filter": "(?i)\\bJP\\b|Japan|日本",
       "icon": `${iconBase}/Japan.png`
+    },
+    {
+      ...groupBaseOption,
+      "name": "🇰🇷 自动-KR",
+      "type": "url-test",
+      "include-all": true,
+      "filter": "(?i)\\bKR\\b|Korea|韩国|首尔",
+      "icon": `${iconBase}/Korea.png`
     },
     {
       ...groupBaseOption,
       "name": "🇸🇬 自动-SG",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)SG|Singapore|狮城|新加坡",
+      "filter": "(?i)\\bSG\\b|Singapore|狮城|新加坡",
       "icon": `${iconBase}/Singapore.png`
+    },
+    {
+      ...groupBaseOption,
+      "name": "🇻🇳 自动-VN",
+      "type": "url-test",
+      "include-all": true,
+      "filter": "(?i)\\bVN\\b|Vietnam|越南",
+      "icon": `${iconBase}/Vietnam.png`
     },
     {
       ...groupBaseOption,
       "name": "🇺🇸 自动-US",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)US|United States|America|美国",
+      "filter": "(?i)\\bUS\\b|United States|America|美国",
       "icon": `${iconBase}/United_States.png`
     },
     {
@@ -471,7 +489,7 @@ function main(config) {
       "name": "🇩🇪 自动-DE",
       "type": "url-test",
       "include-all": true,
-      "filter": "(?i)DE|Germany|德国|法兰克福",
+      "filter": "(?i)\\bDE\\b|Germany|德国|法兰克福",
       "icon": `${iconBase}/Germany.png`
     },
     {
