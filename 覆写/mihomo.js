@@ -130,7 +130,7 @@ const ruleProviders = {
   "Microsoft": {
     ...ruleProviderCommon,
     "behavior": "classical",
-    "url": `${ruleBase}/Microsoft/Microsoft.list`,
+    "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Shadowrocket/Microsoft/Microsoft.list",
     "path": "./ruleset/blackmatrix7/Microsoft.yaml",
     "format": "text"
   },
@@ -322,10 +322,10 @@ function main(config) {
   }
 
   // 1. 定义过滤器关键词 (排除 "官网" "流量" 等)
-  const filterKeywords = "官网|套餐|流量| expiring|剩余|時間|重置|URL|到期|过期|机场|group|sub|订阅|查询|续费|观看|频道|官网|客服|M3U|车费|车友|上车|通知|公告|严禁|测速";
+  const filterKeywords = "官网|套餐|流量| expiring|剩余|時間|重置|URL|到期|过期|机场|group|sub|订阅|查询|续费|观看|频道|官网|客服|M3U|车费|车友|上车|通知|公告[...]
   
   // 2. 定义地区关键词 (已分组的地区)
-  const regionKeywords = "\\bHK(?:[^A-Za-z]|$)|Hong Kong|香港|\\bTW(?:[^A-Za-z]|$)|Taiwan|台湾|\\bJP(?:[^A-Za-z]|$)|Japan|日本|\\bKR(?:[^A-Za-z]|$)|Korea|韩国|首尔|\\bSG(?:[^A-Za-z]|$)|Singapore|狮城|新加坡|\\bVN(?:[^A-Za-z]|$)|Vietnam|越南|\\bUS(?:[^A-Za-z]|$)|United States|America|美国|\\bDE(?:[^A-Za-z]|$)|Germany|德国|法兰克福";
+  const regionKeywords = "\\bHK(?:[^A-Za-z]|$)|Hong Kong|香港|\\bTW(?:[^A-Za-z]|$)|Taiwan|台湾|\\bJP(?:[^A-Za-z]|$)|Japan|日本|\\bKR(?:[^A-Za-z]|$)|Korea|韩国|首尔|\\bSG(?:[^A-Za-z]|$)|[...]
 
   // 3. 创建过滤器
   // 节点过滤器 (Global, 节点选择, 漏网之鱼 使用)
