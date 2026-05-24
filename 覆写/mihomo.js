@@ -225,6 +225,20 @@ const ruleProviders = {
     "path": "./ruleset/blackmatrix7/Twitter.yaml",
     "format": "text"
   },
+  "OKX": {
+    ...ruleProviderCommon,
+    "behavior": "classical",
+    "url": `${ruleBase}/OKX/OKX.list`,
+    "path": "./ruleset/blackmatrix7/OKX.yaml",
+    "format": "text"
+  },
+  "Binance": {
+    ...ruleProviderCommon,
+    "behavior": "classical",
+    "url": `${ruleBase}/Binance/Binance.list`,
+    "path": "./ruleset/blackmatrix7/Binance.yaml",
+    "format": "text"
+  },
   "Game": {
     ...ruleProviderCommon,
     "behavior": "classical",
@@ -277,6 +291,8 @@ const rules = [
   "RULE-SET,GitHub,GitHub",
   "RULE-SET,Telegram,节点选择",
   "RULE-SET,Twitter,X",
+  "RULE-SET,OKX,加密货币",
+  "RULE-SET,Binance,加密货币",
   "RULE-SET,Game,节点选择",
   "RULE-SET,Global,节点选择",
   "RULE-SET,ChinaMax,DIRECT",
@@ -413,6 +429,13 @@ function main(config) {
       "type": "url-test",
       "proxies": [...autoRegionGroups],
       "icon": `${iconBase}/Twitter.png`
+    },
+    {
+      ...groupBaseOption,
+      "name": "加密货币",
+      "type": "select",
+      "proxies": ["🇭🇰 自动-HK", ...autoRegionGroups.filter(g => g !== "🇭🇰 自动-HK"), "DIRECT"],
+      "icon": `${iconBase}/Bitcoin.png`
     },
     {
       ...groupBaseOption,
