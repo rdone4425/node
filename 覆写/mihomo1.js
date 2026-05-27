@@ -65,13 +65,13 @@ const ruleProviderCommon = {
 };
 
 // 节点订阅通用配置 - 对应 mihomo.yaml 的 NodeParam 锚点
-// 每小时更新一次订阅节点，每 6 秒一次健康检查
+// 每小时更新一次订阅节点，每 300 秒一次健康检查
 const proxyProviderCommon = {
   "type": "http",
   "interval": 3600,                              // 每小时更新一次订阅
   "health-check": {
     "enable": true,
-    "url": "http://www.google.com/blank.html",   // 健康检查 URL
+    "url": "http://www.gstatic.com/generate_204", // 健康检查 URL
     "interval": 300                               // 每 300 秒检查一次
   }
 };
@@ -304,11 +304,11 @@ const rules = [
 ];
 
 // 代理组通用配置 - 与 mihomo.yaml 一致的健康检查策略
-// 每 6 秒一次惰性健康检查，容差 20ms，时延超过 2 秒判定为失败，失败 3 次则自动触发健康检查
+// 每 300 秒一次惰性健康检查，容差 20ms，时延超过 2 秒判定为失败，失败 3 次则自动触发健康检查
 const groupBaseOption = {
   "interval": 300,                               // 每 300 秒一次健康检查
   "timeout": 2000,                              // 2 秒超时判定失败
-  "url": "http://www.google.com/blank.html",    // 轻量测试页面
+  "url": "http://www.gstatic.com/generate_204", // 轻量测试页面
   "lazy": true,                                 // 惰性检查（仅在使用时才检查）
   "max-failed-times": 3,                        // 失败 3 次自动触发健康检查
   "tolerance": 20,                              // 延迟容差 20ms，避免频繁切换
@@ -330,9 +330,16 @@ function main(config) {
   // 应用节点订阅通用配置到所有 proxy-providers
   if (config["proxy-providers"]) {
     Object.keys(config["proxy-providers"]).forEach(key => {
+      const provider = config["proxy-providers"][key];
       config["proxy-providers"][key] = {
         ...proxyProviderCommon,
-        ...config["proxy-providers"][key]  // 保留原有的特定配置（如 url, path 等）
+        ...provider,  // 保留原有的特定配置（如 url, path 等）
+        "health-check": {
+          ...proxyProviderCommon["health-check"],
+          ...(provider["health-check"] || {}),
+          "url": proxyProviderCommon["health-check"].url,
+          "interval": proxyProviderCommon["health-check"].interval
+        }
       };
     });
   }
@@ -538,8 +545,10 @@ function main(config) {
   // 添加判断
   if (config["proxies"]) {
     config["proxies"].forEach(proxy => {
-      // 为每个节点设置 udp = true
-      proxy.udp = true
+      // 仅在订阅未显式声明 udp 时补默认值，避免覆盖不支持 UDP 的节点配置
+      if (proxy.udp === undefined) {
+        proxy.udp = true;
+      }
     })
   }
   // 返回修改后的配置
