@@ -367,7 +367,8 @@ function main(config) {
     "🇺🇸 自动-US",
     "🇩🇪 自动-DE"
   ];
-  const autoRegionGroups = [...countryGroups, "🌐 其他节点"];
+  const manualRegionGroups = [...countryGroups, "🌐 其他节点"];
+  const autoRegionGroups = [...countryGroups];
 
   // 图标基础路径
   const iconBase = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color";
@@ -378,7 +379,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "节点选择",
       "type": "select",
-      "proxies": [...autoRegionGroups],
+      "proxies": [...manualRegionGroups],
       "icon": `${iconBase}/Proxy.png`
     },
     {
@@ -406,14 +407,14 @@ function main(config) {
       ...groupBaseOption,
       "name": "苹果服务",
       "type": "select",
-      "proxies": ["DIRECT", ...autoRegionGroups],
+      "proxies": ["DIRECT", ...manualRegionGroups],
       "icon": `${iconBase}/Apple.png`
     },
     {
       ...groupBaseOption,
       "name": "微软服务",
       "type": "select",
-      "proxies": ["DIRECT", ...autoRegionGroups],
+      "proxies": ["DIRECT", ...manualRegionGroups],
       "icon": `${iconBase}/Microsoft.png`
     },
     {
