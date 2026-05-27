@@ -367,7 +367,8 @@ function main(config) {
     "🇺🇸 自动-US",
     "🇩🇪 自动-DE"
   ];
-  const autoRegionGroups = [...countryGroups, "🌐 其他节点"];
+  const manualRegionGroups = [...countryGroups, "🌐 其他节点"];
+  const autoRegionGroups = [...countryGroups];
 
   // 图标基础路径
   const iconBase = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color";
@@ -378,14 +379,14 @@ function main(config) {
       ...groupBaseOption,
       "name": "节点选择",
       "type": "select",
-      "proxies": [...autoRegionGroups],
+      "proxies": [...manualRegionGroups],
       "icon": `${iconBase}/Proxy.png`
     },
     {
       ...groupBaseOption,
       "name": "AI",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "proxies": [...autoRegionGroups],
       "icon": `${iconBase}/Bot.png`
     },
@@ -393,7 +394,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "YouTube",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "proxies": [...autoRegionGroups],
       "icon": `${iconBase}/YouTube.png`
     },
@@ -401,7 +402,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "谷歌服务",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "proxies": [...autoRegionGroups],
       "icon": `${iconBase}/Google_Search.png`
     },
@@ -409,21 +410,21 @@ function main(config) {
       ...groupBaseOption,
       "name": "苹果服务",
       "type": "select",
-      "proxies": ["DIRECT", ...autoRegionGroups],
+      "proxies": ["DIRECT", ...manualRegionGroups],
       "icon": `${iconBase}/Apple.png`
     },
     {
       ...groupBaseOption,
       "name": "微软服务",
       "type": "select",
-      "proxies": ["DIRECT", ...autoRegionGroups],
+      "proxies": ["DIRECT", ...manualRegionGroups],
       "icon": `${iconBase}/Microsoft.png`
     },
     {
       ...groupBaseOption,
       "name": "Spotify",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "proxies": [...autoRegionGroups],
       "icon": `${iconBase}/Spotify.png`
     },
@@ -431,7 +432,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "GitHub",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "proxies": [...autoRegionGroups],
       "icon": `${iconBase}/GitHub.png`
     },
@@ -439,7 +440,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "X",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "proxies": [...autoRegionGroups],
       "icon": `${iconBase}/Twitter.png`
     },
@@ -461,7 +462,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "漏网之鱼",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "proxies": [...autoRegionGroups],
       "icon": `${iconBase}/Final.png`
     },
@@ -476,7 +477,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🇭🇰 自动-HK",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": "(?i)\\bHK(?:[^A-Za-z]|$)|Hong Kong|香港",
       "icon": `${iconBase}/Hong_Kong.png`
@@ -485,7 +486,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🇹🇼 自动-TW",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": "(?i)\\bTW(?:[^A-Za-z]|$)|Taiwan|台湾",
       "icon": `${iconBase}/Taiwan.png`
@@ -494,7 +495,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🇯🇵 自动-JP",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": "(?i)\\bJP(?:[^A-Za-z]|$)|Japan|日本",
       "icon": `${iconBase}/Japan.png`
@@ -503,7 +504,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🇰🇷 自动-KR",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": "(?i)\\bKR(?:[^A-Za-z]|$)|Korea|韩国|首尔",
       "icon": `${iconBase}/Korea.png`
@@ -512,7 +513,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🇸🇬 自动-SG",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": "(?i)\\bSG(?:[^A-Za-z]|$)|Singapore|狮城|新加坡",
       "icon": `${iconBase}/Singapore.png`
@@ -521,7 +522,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🇻🇳 自动-VN",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": "(?i)\\bVN(?:[^A-Za-z]|$)|Vietnam|越南",
       "icon": `${iconBase}/Vietnam.png`
@@ -530,7 +531,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🇺🇸 自动-US",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": "(?i)\\bUS(?:[^A-Za-z]|$)|United States|America|美国",
       "icon": `${iconBase}/United_States.png`
@@ -539,7 +540,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🇩🇪 自动-DE",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": "(?i)\\bDE(?:[^A-Za-z]|$)|Germany|德国|法兰克福",
       "icon": `${iconBase}/Germany.png`
@@ -548,7 +549,7 @@ function main(config) {
       ...groupBaseOption,
       "name": "🌐 其他节点",
       "type": "load-balance",
-      "strategy": "round-robin",
+      "strategy": "consistent-hashing",
       "include-all": true,
       "filter": otherFilterString,
       "icon": `${iconBase}/World_Map.png`
@@ -570,3 +571,4 @@ function main(config) {
   // 返回修改后的配置
   return config;
 }
+
