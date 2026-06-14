@@ -69,8 +69,8 @@ TOP_N=5
 # Cloudflare DNS 更新配置（可选）
 # 获取方式：https://dash.cloudflare.com/profile/api-tokens
 CF_API_TOKEN=""           # API Token (需要DNS编辑权限)
-CF_ZONE_ID=""             # Zone ID (在域名概述页面可以找到)
-CF_DOMAIN=""              # 要更新的域名 (如: example.com)
+CF_ZONE_ID="7df6bfc2332fa21bb9195a594201dc02"             # Zone ID (在域名概述页面可以找到)
+CF_DOMAIN="zhangtea.ggff.net"              # 要更新的域名 (如: example.com)
 # 注意：DNS记录名会自动生成，格式为 地区代码+IP版本号
 #       例如：HK的IPv4会创建 hk4.example.com, HK的IPv6会创建 hk6.example.com
 
