@@ -363,7 +363,6 @@ function main(config) {
     "🇯🇵 自动-JP",
     "🇰🇷 自动-KR",
     "🇸🇬 自动-SG",
-    "🇻🇳 自动-VN",
     "🇺🇸 自动-US",
     "🇩🇪 自动-DE"
   ];
@@ -505,14 +504,6 @@ function main(config) {
       "include-all": true,
       "filter": "(?i)\\bSG(?:[^A-Za-z]|$)|Singapore|狮城|新加坡",
       "icon": `${iconBase}/Singapore.png`
-    },
-    {
-      ...groupBaseOption,
-      "name": "🇻🇳 自动-VN",
-      "type": "url-test",
-      "include-all": true,
-      "filter": "(?i)\\bVN(?:[^A-Za-z]|$)|Vietnam|越南",
-      "icon": `${iconBase}/Vietnam.png`
     },
     {
       ...groupBaseOption,
